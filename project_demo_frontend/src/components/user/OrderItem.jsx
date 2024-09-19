@@ -94,21 +94,21 @@ const OrderItem = ({ order }) => {
   return (
     <OrderItemWrapper>
       <div className="order-item-details">
-        <h3 className="text-x order-item-title">Order no: {order.order_no}</h3>
+        <h3 className="text-x order-item-title">Order no: {order.order_id}</h3>
         <div className="order-info-group flex flex-wrap">
           <div className="order-info-item">
             <span className="text-gray font-semibold">Order Date:</span>
-            <span className="text-silver">{order.order_date}</span>
+            <span className="text-silver">{order.order_date_formatted}</span>
           </div>
           <div className="order-info-item">
             <span className="text-gray font-semibold">Order Status:</span>
-            <span className="text-silver">{order.status}</span>
+            <span className="text-silver">{order.order_status}</span>
           </div>
           <div className="order-info-item">
             <span className="text-gray font-semibold">
               Estimated Delivery Date:
             </span>
-            <span className="text-silver">{order.delivery_date}</span>
+            <span className="text-silver">16/06/2005</span>
           </div>
           <div className="order-info-item">
             <span className="text-gray font-semibold">Method:</span>
@@ -116,37 +116,49 @@ const OrderItem = ({ order }) => {
           </div>
         </div>
       </div>
-      <div className="order-overview flex justify-between">
-        <div className="order-overview-content grid">
-          <div className="order-overview-img">
-            <img
-              src={order.items[0].imgSource}
-              alt=""
-              className="object-fit-cover"
-            />
+      {order.order_items.map((item) => {
+
+        return (<div className="order-overview flex justify-between">
+          <div className="order-overview-content grid">
+            <div className="order-overview-img">
+              <img
+                src={item.product.product_image}
+                alt=""
+                className="object-fit-cover"
+              />
+            </div>
+            <div className="order-overview-info">
+              <div className="flex items-center">
+                <h4 className="text-xl" style={{ marginRight: '7px' }}>{item.product.title}</h4>
+                <h5 className="text-silver" style={{ marginTop: '2px', fontSize: '12px' }}>({item.product.category.title})</h5>
+              </div>
+
+              <ul>
+                <li className="font-semibold text-base">
+                  <span>Colour:</span>
+                  <span className="text-silver">{item.product.color} </span>
+                </li>
+                <li className="font-semibold text-base">
+                  <span>Size:</span>
+                  <span className="text-silver">{item.size} </span>
+                </li>
+                <li className="font-semibold text-base">
+                  <span>Qty:</span>
+                  <span className="text-silver">{item.quantity}</span>
+                </li>
+                <li className="font-semibold text-base">
+                  <span>Total:</span>
+                  <span className="text-silver">
+                    {item.item_total}
+                  </span>
+                </li>
+              </ul>
+            </div>
           </div>
-          <div className="order-overview-info">
-            <h4 className="text-xl">{order.items[0].name}</h4>
-            <ul>
-              <li className="font-semibold text-base">
-                <span>Colour:</span>
-                <span className="text-silver">{order.items[0].color}</span>
-              </li>
-              <li className="font-semibold text-base">
-                <span>Qty:</span>
-                <span className="text-silver">{order.items[0].quantity}</span>
-              </li>
-              <li className="font-semibold text-base">
-                <span>Total:</span>
-                <span className="text-silver">
-                  {currencyFormat(order.items[0].price)}
-                </span>
-              </li>
-            </ul>
-          </div>
-        </div>
-        <BaseLinkGreen to="/order_detail">View Detail</BaseLinkGreen>
-      </div>
+          <BaseLinkGreen to={`/order_detail/${order.order_id}`}>View Detail</BaseLinkGreen>
+        </div>)
+      })}
+
     </OrderItemWrapper>
   );
 };

@@ -2,7 +2,7 @@ import styled from "styled-components";
 import { Container } from "../../styles/styles";
 import Title from "../../components/common/Title";
 import Billing from "../../components/checkout/Billing";
-import ShippingPayment from "../../components/checkout/ShippingPayment";
+import ShippingAddress from "../../components/checkout/ShippingAddress";
 import { breakpoints, defaultTheme } from "../../styles/themes/default";
 
 const CheckoutScreenWrapper = styled.main`
@@ -26,7 +26,7 @@ const CheckoutScreen = () => {
         <Title titleText={"Check Out"} />
         <Billing />
         <div className="horiz-line-separator w-full"></div>
-        <ShippingPayment />
+        <ShippingAddress />
       </Container>
     </CheckoutScreenWrapper>
   );

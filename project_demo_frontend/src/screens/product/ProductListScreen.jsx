@@ -9,8 +9,11 @@ import { breakpoints, defaultTheme } from "../../styles/themes/default";
 import ProductFilter from "../../components/product/ProductFilter";
 import { useFilterProductsMutation } from "../../services/userProductsApi";
 import Loader from '../../components/Loader/Loader'
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { useEffect } from "react";
+import { getToken } from "../../services/LocalStorageService";
+import { useGetCartProductsQuery } from "../../services/userCartApi";
+import { addItemToCart } from "../../features/cartSlice";
 
 
 const ProductsContent = styled.div`
@@ -94,6 +97,23 @@ const DescriptionContent = styled.div`
 const ProductListScreen = () => {
   const filters = useSelector((state) => state.productFilter);
   const [filterProducts, { data: products, isSuccess: isSuccessProducts, isLoading, error }] = useFilterProductsMutation();
+  // const { access_token } = getToken();
+  // const dispatch = useDispatch();
+  // const { data: cartData, isSuccess: isSuccessCart } = useGetCartProductsQuery({ access_token });
+
+  // useEffect(() => {
+  //   if (cartData && isSuccessCart) {
+  //     // Assuming `cartData` is an array of cart items
+  //     cartData.forEach((item) => {
+  //       dispatch(addItemToCart({
+  //         product: item.product,    // Assuming item contains a `product` field
+  //         quantity: item.quantity,   // Assuming item contains a `quantity` field
+  //         cart_id: item.cart_id,
+  //         size: item.size
+  //       }));
+  //     });
+  //   }
+  // }, [cartData, isSuccessCart]);
 
   useEffect(() => {
     // Trigger the mutation to fetch products based on the current filters
@@ -115,7 +135,7 @@ const ProductListScreen = () => {
         <Breadcrumb items={breadcrumbItems} />
         <ProductsContent className="grid items-start">
           <ProductsContentLeft>
-              <ProductFilter />
+            <ProductFilter />
           </ProductsContentLeft>
           <ProductsContentRight>
             <div className="products-right-top flex items-center justify-between">

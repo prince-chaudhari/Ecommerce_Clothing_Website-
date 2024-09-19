@@ -1,3 +1,4 @@
+import { useNavigate } from "react-router-dom";
 import styled from "styled-components";
 import { BaseButtonGreen } from "../../styles/button";
 import { breakpoints, defaultTheme } from "../../styles/themes/default";
@@ -31,26 +32,35 @@ const CartSummaryWrapper = styled.div`
   }
 `;
 
-const CartSummary = () => {
+const CartSummary = ({ totalQuantity, totalPrice, savings }) => {
+  const navigate = useNavigate();
+  const handleCheckoutClick = () => {
+    navigate('/checkout');
+  };
+
   return (
     <CartSummaryWrapper>
       <ul className="summary-list">
         <li className="summary-item flex justify-between">
           <span className="font-medium text-outerspace">Sub Total</span>
-          <span className="font-medium text-outerspace">$513.00</span>
+          <span className="font-medium text-outerspace">₹{totalPrice}</span>
+        </li>
+        <li className="summary-item flex justify-between">
+          <span className="font-medium text-outerspace">Savings</span>
+          <span className="font-medium text-outerspace">₹{savings}</span>
         </li>
         <li className="summary-item flex justify-between">
           <span className="font-medium text-outerspace">Shipping</span>
-          <span className="font-medium text-outerspace">$5.00</span>
+          <span className="font-medium text-outerspace">FREE</span>
         </li>
         <li className="summary-item flex justify-between">
           <span className="font-medium text-outerspace">Grand Total</span>
           <span className="summary-item-value font-bold text-outerspace">
-            $518.00
+          ₹{totalPrice}
           </span>
         </li>
       </ul>
-      <BaseButtonGreen type="submit" className="checkout-btn">
+      <BaseButtonGreen type="button" className="checkout-btn" onClick={handleCheckoutClick}>
         Proceed To Checkout
       </BaseButtonGreen>
     </CartSummaryWrapper>

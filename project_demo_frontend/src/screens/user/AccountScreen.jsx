@@ -6,9 +6,38 @@ import UserMenu from "../../components/user/UserMenu";
 import Title from "../../components/common/Title";
 import { FormElement, Input } from "../../styles/form";
 import { BaseLinkGreen } from "../../styles/button";
-import { Link } from "react-router-dom";
 import { breakpoints, defaultTheme } from "../../styles/themes/default";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
+import { useState } from "react";
+import { useChangeUserProfileMutation } from "../../services/userAuthApi";
+import { getToken } from "../../services/LocalStorageService";
+import { setUserInfo } from "../../features/userSlice";
+import CustomAlert from "../product/WarningAlert";
+import ChangePasswordScreen from "./ChangePasswordScreen";
+import { Link } from "react-router-dom";
+import { useDeleteUserAddressMutation } from "../../services/userAddressApi";
+import { every } from "lodash";
+import { removeUserAddress } from "../../features/addressSlice";
+
+// Custom style for Save Changes button
+const SaveChangesButton = styled.button`
+  background-color: ${defaultTheme.color_sea_green};
+  border-color: ${defaultTheme.color_sea_green};
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: bold;
+  cursor: pointer;
+  margin-bottom: 14px;
+  text-transform: uppercase;
+  transition: background-color 0.3s;
+
+  &:hover {
+    background-color: ${defaultTheme.color_dark_green};
+  }
+`;
 
 const AccountScreenWrapper = styled.main`
   .address-list {
@@ -48,6 +77,11 @@ const AccountScreenWrapper = styled.main`
       margin: 0 10px;
     }
   }
+
+  /* Position the form relative to allow absolute positioning for Save Changes button */
+  form {
+    position: relative;
+  }
 `;
 
 const breadcrumbItems = [
@@ -59,8 +93,95 @@ const breadcrumbItems = [
 ];
 
 const AccountScreen = () => {
+  const dispatch = useDispatch();
+  const { access_token } = getToken();
+  const { username, email, gender, date_of_birth } = useSelector((state) => state.user);
+  const [userProfile, { isLoading }] = useChangeUserProfileMutation();
+  const [userDeleteAddress, { isLoading: isLoadingUserDeleteAddress }] = useDeleteUserAddressMutation();
+  const [server_error, setServerError] = useState({});
+  const [server_msg, setServerMsg] = useState({});
+  const [successAlertOpen, setSuccessAlertOpen] = useState(false);
+  const [showChangePassword, setShowChangePassword] = useState(false);
+  const { address: addressData } = useSelector(state => state.address);
+  console.log("addressData", addressData);
 
-  const { username } = useSelector(state => state.user)
+
+  const handleShowChangePassword = () => {
+    setShowChangePassword(true);
+  };
+
+  const handleBackToAccount = () => {
+    setShowChangePassword(false);
+  };
+
+  // Create local state for form fields
+  const [formValues, setFormValues] = useState({
+    username,
+    email,
+    gender,
+    date_of_birth,
+  });
+
+  // Handle input change
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormValues({
+      ...formValues,
+      [name]: value,
+    });
+  };
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+
+    const data = new FormData(event.currentTarget);
+
+    if (formValues.username === username && formValues.gender === gender && formValues.date_of_birth === date_of_birth) {
+      console.log("No changes detected");
+      return;
+    }
+
+    data.append('username', formValues.username);
+    data.append('gender', formValues.gender);
+    data.append('date_of_birth', formValues.date_of_birth);
+
+    const res = await userProfile({ actualData: data, access_token });
+
+    if (res.error) {
+      setServerMsg({});
+      setServerError(res.error.data.errors);
+      console.log(res.error.data);
+    }
+
+    if (res.data) {
+      setServerError({});
+      setServerMsg(res.data);
+      console.log(res.data);
+
+      // Dispatch the action to update the Redux state
+      dispatch(setUserInfo(formValues));
+      setSuccessAlertOpen(true)
+      // Optionally refetch the logged user data
+      // refetch();
+    }
+  };
+
+  const handleClose = () => {
+    setSuccessAlertOpen(false);
+  };
+
+  const handleDeleteAddress = async (addressId, event) => {
+    event.preventDefault();
+    const item = addressData.find((item) => item.address.address_id === addressId);
+    if (!item) return;
+
+    try {
+      await userDeleteAddress({ address_id: addressId, access_token }).unwrap();
+      dispatch(removeUserAddress({ addressIdToRemove: addressId }));
+    } catch (error) {
+      console.error('Failed to remove from wishlist: ', error);
+    }
+  }
 
   return (
     <AccountScreenWrapper className="page-py-spacing">
@@ -69,160 +190,142 @@ const AccountScreen = () => {
         <UserDashboardWrapper>
           <UserMenu />
           <UserContent>
-            <Title titleText={"My Account"} />
-            <h4 className="title-sm">Contact Details</h4>
-            <form>
-              <div className="form-wrapper">
-                <FormElement className="form-elem">
-                  <label
-                    htmlFor=""
-                    className="form-label font-semibold text-base"
-                  >
-                    {username}
-                  </label>
-                  <div className="form-input-wrapper flex items-center">
-                    <Input
-                      type="text"
-                      className="form-elem-control text-outerspace font-semibold"
-                      value="Richard Doe"
-                      readOnly
-                    />
-                    <button type="button" className="form-control-change-btn">
-                      Change
-                    </button>
-                  </div>
-                </FormElement>
-                <FormElement className="form-elem">
-                  <label
-                    htmlFor=""
-                    className="form-label font-semibold text-base"
-                  >
-                    Email Address
-                  </label>
-                  <div className="form-input-wrapper flex items-center">
-                    <Input
-                      type="email"
-                      className="form-elem-control text-outerspace font-semibold"
-                      value="richard@gmail.com"
-                      readOnly
-                    />
-                    <button type="button" className="form-control-change-btn">
-                      Change
-                    </button>
-                  </div>
-                </FormElement>
-                <FormElement className="form-elem">
-                  <label
-                    htmlFor=""
-                    className="form-label font-semibold text-base"
-                  >
-                    Phone Number
-                  </label>
-                  <div className="form-input-wrapper flex items-center">
-                    <Input
-                      type="text"
-                      className="form-elem-control text-outerspace font-semibold"
-                      value="+9686 6864 3434"
-                      readOnly
-                    />
-                    <button type="button" className="form-control-change-btn">
-                      Change
-                    </button>
-                  </div>
-                </FormElement>
-                <FormElement className="form-elem">
-                  <label
-                    htmlFor=""
-                    className="form-label font-semibold text-base"
-                  >
-                    Password
-                  </label>
-                  <div className="form-input-wrapper flex items-center">
-                    <Input
-                      type="password"
-                      className="form-elem-control text-outerspace font-semibold"
-                      value="Pass Key"
-                      readOnly
-                    />
-                    <button type="button" className="form-control-change-btn">
-                      Change
-                    </button>
-                  </div>
-                </FormElement>
-              </div>
-            </form>
-            <div>
-              <h4 className="title-sm">My Contact Addresss</h4>
-              <BaseLinkGreen to="/account/add">Add Address</BaseLinkGreen>
-              <div className="address-list grid">
-                <div className="address-item grid">
-                  <p className="text-outerspace text-lg font-semibold address-title">
-                    Richard Doe
-                  </p>
-                  <p className="text-gray text-base font-medium address-description">
-                    1/4 Watson Street Flat, East Coastal Road, Ohio City
-                  </p>
-                  <ul className="address-tags flex flex-wrap">
-                    <li className="text-gray text-base font-medium inline-flex items-center justify-center">
-                      Home
-                    </li>
-                    <li className="text-gray text-base font-medium inline-flex items-center justify-center">
-                      Default billing address
-                    </li>
-                  </ul>
-                  <div className="address-btns flex">
-                    <Link
-                      to="/"
-                      className="text-base text-outerspace font-semibold"
-                    >
-                      Remove
-                    </Link>
-                    <div className="btn-separator"></div>
-                    <Link
-                      to="/"
-                      className="text-base text-outerspace font-semibold"
-                    >
-                      Edit
-                    </Link>
-                  </div>
-                </div>
+            {showChangePassword ? (
+              <ChangePasswordScreen />
+            ) : (
+              <>
+                <Title titleText={"My Account"} />
+                <h4 className="title-sm">Contact Details</h4>
+                <form onSubmit={handleSubmit}>
+                  <div className="form-wrapper">
+                    <FormElement className="form-elem">
+                      <label htmlFor="username" className="form-label font-semibold text-base">
+                        Username
+                      </label>
+                      <div className="form-input-wrapper flex items-center">
+                        <Input
+                          type="text"
+                          name="username"
+                          className="form-elem-control text-outerspace font-semibold"
+                          value={formValues.username}
+                          onChange={handleChange}
+                        />
+                      </div>
+                    </FormElement>
 
-                <div className="address-item grid">
+                    <FormElement className="form-elem">
+                      <label htmlFor="email" className="form-label font-semibold text-base">
+                        Email Address
+                      </label>
+                      <div className="form-input-wrapper flex items-center">
+                        <Input
+                          type="email"
+                          name="email"
+                          className="form-elem-control text-outerspace font-semibold"
+                          value={formValues.email}
+                          onChange={handleChange}
+                          readOnly
+                          style={{ cursor: 'not-allowed' }}
+                        />
+                      </div>
+                    </FormElement>
+
+                    <FormElement className="form-elem">
+                      <label htmlFor="gender" className="form-label font-semibold text-base">
+                        Gender
+                      </label>
+                      <div className="form-input-wrapper flex items-center">
+                        <select
+                          name="gender"
+                          className="form-elem-control text-outerspace font-semibold"
+                          value={formValues.gender}
+                          onChange={handleChange}
+                        >
+                          <option value="">Select Gender</option>
+                          <option value="M">Male</option>
+                          <option value="F">Female</option>
+                          <option value="O">Other</option>
+                        </select>
+                      </div>
+                    </FormElement>
+
+                    <FormElement className="form-elem">
+                      <label htmlFor="date_of_birth" className="form-label font-semibold text-base">
+                        Date of Birth
+                      </label>
+                      <div className="form-input-wrapper flex items-center">
+                        <Input
+                          type="date"
+                          name="date_of_birth"
+                          className="form-elem-control text-outerspace font-semibold"
+                          value={formValues.date_of_birth}
+                          onChange={handleChange}
+                        />
+                      </div>
+                    </FormElement>
+                  </div>
+
+                  {/* Save Changes button positioned at the bottom right */}
+                  <SaveChangesButton type="submit">Save Changes</SaveChangesButton>
+                </form>
+                <div>
+                  <h4 className="title-sm" style={{ marginBottom: '4px' }}>My Contact Addresses</h4>
+                  <BaseLinkGreen to="/account/add">Add Address</BaseLinkGreen>
+                </div>
+                <div>
+                  <h4 className="title-sm" style={{ marginBottom: '4px', marginTop: '14px' }}>Change Password</h4>
+                  <BaseLinkGreen as="button" onClick={handleShowChangePassword}>
+                    Change Password
+                  </BaseLinkGreen>
+                </div>
+              </>
+            )}
+            {showChangePassword && (
+              <BaseLinkGreen as="button" onClick={handleBackToAccount}>
+                Back to Account
+              </BaseLinkGreen>
+            )}
+            <div className="address-list grid" >
+              {addressData && addressData.length > 0 && addressData.map((address, index) => (
+                <div className="address-item grid" key={`${address.address.address_id}-${index}`}>
                   <p className="text-outerspace text-lg font-semibold address-title">
-                    Richard Doe
+                    First Name: {address.address.first_name} 
+                    <br />
+                    Last Name: {address.address.last_name}
                   </p>
                   <p className="text-gray text-base font-medium address-description">
-                    1/4 Watson Street Flat, East Coastal Road, Ohio City
+                  Full address: {address.address.apartment},{address.address.street_address},{address.address.city}-{address.address.postal_code},{address.address.country}
                   </p>
-                  <ul className="address-tags flex flex-wrap">
-                    <li className="text-gray text-base font-medium inline-flex items-center justify-center">
-                      Home
-                    </li>
-                    <li className="text-gray text-base font-medium inline-flex items-center justify-center">
-                      Default billing address
-                    </li>
-                  </ul>
+                  <p className="text-gray text-base font-medium ">
+                    Phone Number: {address.address.phone}
+                  </p>
                   <div className="address-btns flex">
-                    <Link
-                      to="/"
+                    <button
+                      onClick={(event) => handleDeleteAddress(address.address.address_id, event)}
                       className="text-base text-outerspace font-semibold"
                     >
                       Remove
-                    </Link>
+                    </button>
                     <div className="btn-separator"></div>
                     <Link
-                      to="/"
+                      to={`address/edit/${address.address.address_id}`}
                       className="text-base text-outerspace font-semibold"
                     >
                       Edit
                     </Link>
                   </div>
                 </div>
-              </div>
+              ))}
             </div>
           </UserContent>
         </UserDashboardWrapper>
       </Container>
+      <CustomAlert
+        open={successAlertOpen}
+        handleClose={handleClose}
+        message="Your profile updated successfully!"
+        severity="success"
+      />
     </AccountScreenWrapper>
   );
 };

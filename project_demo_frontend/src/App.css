@@ -47,3 +47,48 @@
   margin-bottom: 15px;
 }
 
+/* Cart Icon Link */
+.icon-link {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px;
+  border-radius: 50%;
+  background-color: #f7f7f7;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: background-color 0.3s ease;
+}
+
+.icon-link:hover {
+  background-color: #e5e5e5;
+}
+
+/* Active State */
+.icon-link.active {
+  background-color: #e0f7fa;
+}
+
+/* Cart Count Styling */
+.icon-link span {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  background-color: #ff5a5f;
+  color: white;
+  font-size: 12px;
+  font-weight: bold;
+  padding: 4px 6px;
+  border-radius: 50%;
+  line-height: 1;
+  min-width: 20px;
+  text-align: center;
+}
+
+/* Cart Icon Image */
+.icon-link img {
+  width: 24px;
+  height: 24px;
+}
+
+

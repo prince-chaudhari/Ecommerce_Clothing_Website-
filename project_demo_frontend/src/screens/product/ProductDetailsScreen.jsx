@@ -3,8 +3,8 @@ import { Container } from "../../styles/styles";
 import Breadcrumb from "../../components/common/Breadcrumb";
 import { product_one } from "../../data/data";
 import ProductPreview from "../../components/product/ProductPreview";
-import { Link } from "react-router-dom";
-import { BaseLinkGreen } from "../../styles/button";
+import { Link, useNavigate } from "react-router-dom";
+import { AddToCartButton } from "../../styles/button";
 import { currencyFormat } from "../../utils/helper";
 import { breakpoints, defaultTheme } from "../../styles/themes/default";
 import ProductDescriptionTab from "../../components/product/ProductDescriptionTab";
@@ -13,7 +13,12 @@ import ProductServices from "../../components/product/ProductServices";
 import { useParams } from 'react-router-dom';
 import { useGetColorListQuery, useGetProductQuery } from "../../services/userProductsApi";
 import 'bootstrap-icons/font/bootstrap-icons.css';
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { useAddProductToCartMutation, useGetCartProductsQuery } from "../../services/userCartApi";
+import { getToken } from "../../services/LocalStorageService";
+import { useDispatch, useSelector } from "react-redux";
+import { addItemToCart } from '../../features/cartSlice'
+import CustomAlert from './WarningAlert'
 
 const DetailsScreenWrapper = styled.main`
   margin: 60px 0;
@@ -224,10 +229,66 @@ const ProductSimilarStyled = styled(ProductSimilar)`
   margin-top: 40px; /* Add top margin for Similar Products */
 `;
 
+
 const ProductDetailsScreen = () => {
   const { pid } = useParams();
   const { data, isSuccess, isLoading, isError } = useGetProductQuery({ pid });
-  console.log(data);
+  const [isInCart, setIsInCart] = useState(false);
+  const cartItems = useSelector((state) => state.cart.cartItems);
+  const [size, setSize] = useState("");
+  const [selectedSize, setSelectedSize] = useState(""); // Add selectedSize state to track the user's selected size
+  const [successAlertOpen, setSuccessAlertOpen] = useState(false);
+  const [alertOpen, setAlertOpen] = useState(false);
+  const navigate = useNavigate(); // Initialize navigate
+
+  const handleGoToCart = () => {
+    navigate('/cart'); // Redirect to /cart
+  };
+
+  const showAlert = () => {
+    setAlertOpen(true);
+  };
+
+  const handleClose = () => {
+    setAlertOpen(false);
+    setSuccessAlertOpen(false);
+  };
+
+  const { access_token } = getToken();
+
+  const [userCart] = useAddProductToCartMutation();
+  const dispatch = useDispatch();
+
+
+  const handleAddToCart = async () => {
+    if (size === "") {
+      showAlert();
+      return;
+    }
+
+    const res = await userCart({ actualData: { product: pid, size: size }, access_token });
+
+    if (res.error) {
+      console.log(res.error.data);
+      return;
+    }
+
+    if (res.data) {
+      dispatch(addItemToCart({ cart_id: res.data.cart_id, product: res.data.product, quantity: 1, size: size }));
+      setIsInCart(true);
+      setSuccessAlertOpen(true); // Ensure this is set to true
+      setSelectedSize(size); // Update the selected size
+    }
+  };
+
+  // When a new size is selected, reset isInCart if it is not the size already added to the cart
+  const handleSizeChange = (newSize) => {
+    setSize(newSize);
+    // If the new size is not the size already added to the cart, reset isInCart
+    if (newSize !== selectedSize) {
+      setIsInCart(false);
+    }
+  };
 
   if (isLoading) {
     return <div>Loading...</div>; // or a spinner/loading component
@@ -241,7 +302,6 @@ const ProductDetailsScreen = () => {
     return <div>No product data available.</div>;
   }
 
-  // Proceed with rendering the product details
   const stars = Array.from({ length: 5 }, (_, index) => (
     <span
       key={index}
@@ -251,7 +311,7 @@ const ProductDetailsScreen = () => {
           ? "bi bi-star-half"
           : "bi bi-star"
         }`}
-      style={{ paddingRight: '4px', marginTop: '10px' }} // Add padding between stars
+      style={{ paddingRight: '4px', marginTop: '10px' }}
     ></span>
   ));
 
@@ -260,7 +320,6 @@ const ProductDetailsScreen = () => {
     { label: data.product.title.split(' ')[0], link: "" },
     { label: data.product.category.title.split('-')[1], link: "" },
   ];
-  console.log(data && data.product.product_image);
 
   return (
     <DetailsScreenWrapper>
@@ -274,35 +333,52 @@ const ProductDetailsScreen = () => {
           />
           <ProductDetailsWrapper>
             <h2 className="prod-title">{data.product.title}</h2>
-            <div className="flex items-center rating-and-comments flex-wrap">
-              <div className="prod-rating flex items-center">
+            {/* <div className="flex items-center rating-and-comments flex-wrap"> */}
+            <div className="prod-rating flex items-center space-x-2">
+              <div className="stars text-yellow-500 text-2xl flex flex-row items-center">
+                {/* Assuming `stars` is an array of elements/icons */}
                 {stars}
-                <span className="text-gray text-xs">
-                  {data.average_rating.rating}
-                </span>
+              </div>
+              <div className="rating text-gray-800 text-lg font-semibold" style={{ marginTop: '10px', marginLeft: '7px' }}>
+                {data.average_rating.rating}
+              </div>
+              <div className="rating text-gray-800 text-lg font-semibold" style={{ marginTop: '10px', marginLeft: '7px' }}>
+                {data.product_reviews.length} Comment(s)
               </div>
             </div>
 
-            <ProductSizeWrapper>
-              <div className="prod-size-top flex items-center flex-wrap">
-                <p className="text-lg font-semibold text-outerspace">
-                  Select size
-                </p>
-                <Link to="/" className="text-lg text-gray font-medium">
-                  Size Guide &nbsp; <i className="bi bi-arrow-right"></i>
-                </Link>
-              </div>
-              <div className="prod-size-list flex items-center">
-                {product_one.sizes.map((size, index) => (
-                  <div className="prod-size-item" key={index}>
-                    <input type="radio" name="size" />
-                    <span className="flex items-center justify-center font-medium text-outerspace text-sm">
-                      {size}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </ProductSizeWrapper>
+            {data.product.sizes && data.product.sizes.length > 0 &&
+              <ProductSizeWrapper>
+                <div className="prod-size-top flex items-center flex-wrap">
+                  <p className="text-lg font-semibold text-outerspace">
+                    Select size
+                  </p>
+                  <Link to="/" className="text-lg text-gray font-medium">
+                    Size Guide &nbsp; <i className="bi bi-arrow-right"></i>
+                  </Link>
+                </div>
+                <div className="prod-size-list flex items-center">
+                  {data.product.sizes.map((size) => {
+                    return (
+                      <div className="prod-size-item" key={size.id}>
+                        {isInCart && selectedSize === size.name ? (
+                          <input type="radio" name="size" checked readOnly />
+                        ) : (
+                          <input
+                            type="radio"
+                            name="size"
+                            onClick={() => handleSizeChange(size.name)}
+                          />
+                        )}
+                        <span className="flex items-center justify-center font-medium text-outerspace text-sm">
+                          {size.name}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </ProductSizeWrapper>
+            }
             {data.product.colors && data.product.colors.length > 0 &&
               <ProductColorWrapper>
                 <div className="prod-colors-top flex items-center flex-wrap">
@@ -347,17 +423,23 @@ const ProductDetailsScreen = () => {
 
               </ProductColorWrapper>
             }
+
             <div className="btn-and-price flex items-center flex-wrap">
-              <BaseLinkGreen
-                to="/cart"
-                as={BaseLinkGreen}
-                className="prod-add-btn"
-              >
+              <AddToCartButton className="prod-add-btn">
                 <span className="prod-add-btn-icon">
                   <i className="bi bi-cart2"></i>
                 </span>
-                <span className="prod-add-btn-text">Add to cart</span>
-              </BaseLinkGreen>
+                {isInCart ? (
+                  <span className="prod-add-btn-text" onClick={handleGoToCart}>
+                    Go to cart
+                  </span>
+                ) : (
+                  <span className="prod-add-btn-text" onClick={handleAddToCart}>
+                    Add to cart
+                  </span>
+                )}
+              </AddToCartButton>
+
               <div className="price-container">
                 <span className="prod-price-current">₹{data.product.price}</span>
                 {data.product.old_price && (
@@ -373,12 +455,27 @@ const ProductDetailsScreen = () => {
             <ProductServices />
           </ProductDetailsWrapper>
         </DetailsContent>
-        <ProductDescriptionTabStyled description={data.product.description} />
+        <ProductDescriptionTabStyled description={data.product.description} reviews={data.product_reviews} />
         <ProductSimilarStyled relatedProducts={data.related_products} />
       </Container>
+      {!isInCart && (
+        <CustomAlert
+          open={alertOpen}
+          handleClose={handleClose}
+          message="Please select a size before adding to the cart."
+          severity="warning"
+        />
+      )}
+      <CustomAlert
+        open={successAlertOpen}
+        handleClose={handleClose}
+        message="Item added to cart successfully!"
+        severity="success"
+      />
     </DetailsScreenWrapper>
   );
 };
+
 
 export default ProductDetailsScreen;
 

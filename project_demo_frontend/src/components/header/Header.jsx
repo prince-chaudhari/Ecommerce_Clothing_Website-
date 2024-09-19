@@ -6,7 +6,7 @@ import { navMenuData } from "../../data/data";
 import { Link, useLocation } from "react-router-dom";
 import { Input, InputGroupWrapper } from "../../styles/form";
 import { breakpoints, defaultTheme } from "../../styles/themes/default";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { toggleSidebar } from "../../features/sidebarSlice";
 import { BiSearch, BiMenu } from 'react-icons/bi'; // Import BiMenu
 
@@ -121,6 +121,9 @@ const Header = () => {
   const location = useLocation();
   const dispatch = useDispatch();
 
+  const { cartCnt } = useSelector(state => state.cart)
+  const { wishlistCnt } = useSelector(state => state.wishlist)
+
   return (
     <HeaderMainWrapper className="header flex items-center">
       <Container className="container">
@@ -181,25 +184,31 @@ const Header = () => {
               className={`icon-link ${location.pathname === "/wishlist" ? "active" : ""
                 } inline-flex items-center justify-center`}
             >
-              <img src={staticImages.heart} alt="" />
+              {wishlistCnt > 0 &&
+                <span>{wishlistCnt}</span>
+              }
+              <img src={staticImages.heart} alt="Wishlist" />
             </Link>
             <Link
               to="/account"
               className={`icon-link ${location.pathname === "/account" ||
-                  location.pathname === "/account/add"
-                  ? "active"
-                  : ""
+                location.pathname === "/account/add"
+                ? "active"
+                : ""
                 } inline-flex items-center justify-center`}
             >
               <img src={staticImages.user} alt="" />
             </Link>
             <Link
               to="/cart"
-              className={`icon-link ${location.pathname === "/cart" ? "active" : ""
-                } inline-flex items-center justify-center`}
+              className={`icon-link ${location.pathname === "/cart" ? "active" : ""}`}
             >
-              <img src={staticImages.cart} alt="" />
+              {cartCnt > 0 &&
+                <span>{cartCnt}</span>
+              }
+              <img src={staticImages.cart} alt="Cart" />
             </Link>
+
           </IconLinksWrapper>
         </div>
       </Container>

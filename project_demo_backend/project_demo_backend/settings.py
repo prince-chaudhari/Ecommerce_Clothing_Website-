@@ -44,12 +44,13 @@ INSTALLED_APPS = [
     # Third Party
     'rest_framework',
     'rest_framework_simplejwt',
+    'rest_framework.authtoken',
     'corsheaders',
     'taggit',
 
     # Custom Apps
     'core',
-    'account'
+    'account',
 ]
 
 MIDDLEWARE = [
@@ -98,6 +99,10 @@ JWT_AUTH = {
     # Authorization:Token xxx
     'JWT_AUTH_HEADER_PREFIX': 'Token',
 }
+
+# TIME_ZONE = 'Asia/Kolkata'
+# USE_TZ = True
+
 
 # JWT Configuration
 REST_FRAMEWORK = {
@@ -167,13 +172,22 @@ JAZZMIN_SETTINGS = {
 
 WEBSITE_URL = 'http://127.0.0.1:8000'
 
-# Email Configuration
-EMAIL_BACKEND="django.core.mail.backends.smtp.EmailBackend"
+
+# Email configuration for Gmail SMTP with App Password
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
-EMAIL_HOST_USER = os.environ.get('EMAIL_USER')
-EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_PASS')
 EMAIL_USE_TLS = True
+
+# Your Gmail address
+EMAIL_HOST_USER = 'house12536@gmail.com'
+
+# Your generated app password (replace with the actual 16-character password)
+EMAIL_HOST_PASSWORD = 'mwsr rxyj atou ttef'
+
+# # Optional: Default from email
+# DEFAULT_FROM_EMAIL = 'your_email@gmail.com'
+
 
 # JWT Settings
 SIMPLE_JWT = {

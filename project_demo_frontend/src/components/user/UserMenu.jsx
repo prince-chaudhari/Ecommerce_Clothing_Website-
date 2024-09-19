@@ -1,7 +1,11 @@
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import styled from "styled-components";
 import Title from "../common/Title";
 import { breakpoints, defaultTheme } from "../../styles/themes/default";
+import { useDispatch, useSelector } from "react-redux";
+import { unsetUserInfo } from "../../features/userSlice";
+import { unSetUserToken } from "../../features/authSlice";
+import { removeToken } from "../../services/LocalStorageService";
 
 const NavMenuWrapper = styled.nav`
   margin-top: 32px;
@@ -65,9 +69,19 @@ const NavMenuWrapper = styled.nav`
 
 const UserMenu = () => {
   const location = useLocation();
+  const {username} = useSelector(state => state.user)
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    dispatch(unsetUserInfo({ id: "", name: "", email: "" }));
+    dispatch(unSetUserToken({ access_token: null }));
+    removeToken();
+    navigate("/login");
+  };
   return (
     <div>
-      <Title titleText={"Hello Richard"} />
+      <Title titleText={`Hello ${ username && username.charAt(0).toUpperCase() + username.slice(1)}`} />
       <p className="text-base font-light italic">Welcome to your account.</p>
 
       <NavMenuWrapper>
@@ -127,7 +141,7 @@ const UserMenu = () => {
             </Link>
           </li>
           <li className="nav-menu-item">
-            <Link to="/" className={`nav-menu-link flex items-center`}>
+            <Link onClick={handleLogout} className={`nav-menu-link flex items-center`}>
               <span className="nav-link-icon flex items-center justify-center">
                 <img src="./assets/icons/ac_sign_out.svg" alt="" />
               </span>

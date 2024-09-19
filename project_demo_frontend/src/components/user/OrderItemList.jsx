@@ -5,7 +5,7 @@ const OrderItemList = ({ orders }) => {
   return (
     <div>
       {orders?.map((order) => (
-        <OrderItem key={order.id} order={order} />
+        <OrderItem key={order.order_id} order={order} />
       ))}
     </div>
   );

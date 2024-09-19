@@ -1,13 +1,15 @@
 from rest_framework.response import Response
-from rest_framework import status
+from rest_framework import status, generics
 from rest_framework.views import APIView
-from .serializers import ProductSerializer, CategorySerializer, VendorSerializer, ProductReviewSerializer, CartOrderSerializer, CartOrderItemsSerializer, ProductImagesSerializer, ColorSerializer, SizeSerializer
-from .models import Product, Category, Vendor, ProductReview, CartOrder, CartOrderItems, ProductImages, Color, Size
+from .serializers import ProductSerializer, CategorySerializer, ProductReviewSerializer, ProductImagesSerializer, ColorSerializer, SizeSerializer, CartSerializer, WishlistSerializer, AddressSerializer, OrderSerializer, CheckCouponSerializer, ApplyCouponSerializer
+from .models import Product, Category, Vendor, ProductReview,  ProductImages, Color, Size, Cart, Wishlist, Address, Order, OrderItem
 from taggit.models import Tag
 from django.shortcuts import get_object_or_404
 from django.db.models import Avg
 from .forms import ProductReviewForm
 from django.db.models import Count
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.exceptions import NotFound
 
 class IndexView(APIView):
     permission_classes = []
@@ -111,9 +113,6 @@ class ProductDetailView(APIView):
 
         # Getting average review
         average_rating = ProductReview.objects.filter(product = product).aggregate(rating = Avg('rating'))
-
-        # Product Review Form
-        review_form = ProductReviewForm()
 
         # colors = product.colors.all()
         # colorSerializer = ColorSerializer(colors, many = True)
@@ -231,38 +230,50 @@ class FilterProduct(APIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
-class AddToCart(APIView):
-    def post(self, request, format=None):
-        p_id = request.data.get('id')
-        cart_product = {}
-        
-        cart_product[p_id] = {
-            'title' : request.data.get('title'),
-            'qty' : request.data.get('qty'),
-            'price' : request.data.get('price'),
-            'image' : request.data.get('image'),
-            'pid' : request.data.get('pid'),
-        }
+class AddToCartView(generics.CreateAPIView):
+    serializer_class = CartSerializer
+    permission_classes = [IsAuthenticated]  # Restrict to authenticated users
 
-        if 'cart_data_obj' in request.session:
-            if p_id in request.session['cart_data_obj']:
-                cart_data = request.session['cart_data_obj']
-                cart_data[p_id]['qty'] = int(cart_product[p_id]['qty'])
-                cart_data.update(cart_data)
-                request.session['cart_data_obj'] = cart_data
-            
-            else:
-                cart_data = request.session['cart_data_obj']
-                cart_data.update(cart_product)
-                request.session['cart_data_obj'] = cart_data
+    def post(self, request, *args, **kwargs):
+        data = request.data
+        product_id = data.get('product')
+        size = data.get('size')
+        quantity = data.get('quantity', 1)
 
-        else:
-            request.session['cart_data_obj'] = cart_product
-        
-        return Response({
-            "data" : request.session['cart_data_obj'],
-            "total_cart_items" : len(request.session['cart_data_obj'])
-        }, status=status.HTTP_200_OK)
+        print("data",data)
+
+        user = request.user
+
+        try:
+            product = Product.objects.get(pid=product_id)
+        except Product.DoesNotExist:
+            return Response({"error": "Product not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        # Check if the product is already in the cart
+        cart_item, created = Cart.objects.get_or_create(
+            user=user,
+            product=product,
+            size = size,
+            defaults={'quantity': quantity}
+        )
+
+        if not created:
+            # If already exists, update the quantity
+            cart_item.quantity += quantity
+            cart_item.save()
+
+        serializer = self.get_serializer(cart_item)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+    
+class CartListView(generics.ListAPIView):
+    serializer_class = CartSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        if user.is_authenticated:
+            return Cart.objects.filter(user=user)
+        return Cart.objects.none()
 
 class CartView(APIView):
     def get(self, request, format=None):
@@ -282,68 +293,363 @@ class CartView(APIView):
                 "cart_total_amount" : cart_total_amount
             }, status=status.HTTP_200_OK)
 
-class DeleteCartItem(APIView): # Check before delete
-    def post(self, request, format=None):
-        product_id = request.data.get('id')
-        if 'cart_data_obj' in request.session:
-            if product_id in request.session['cart_data_obj']: 
-                cart_data = request.session['cart_data_obj'] # <<<------------
-                del request.session['cart_data_obj'][product_id]
-                request.session['cart_data_obj'] = cart_data
-        cart_total_amount = 0
-        if 'cart_data_obj' in request.session:
-            for p_id, item in request.session['cart_data_obj'].items():
-                cart_total_amount += (int(item['qty']) * float(item['price']))
+class CartRetrieveUpdateDestroyAPIView(APIView):
+    def patch(self, request, *args, **kwargs):
+        cart_id = request.data.get('cart_id')
+        quantity = request.data.get('quantity')
+
+        if not cart_id:
+            return Response({"error": "Cart ID not provided"}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            cart_item = Cart.objects.get(cart_id=cart_id)
+        except Cart.DoesNotExist:
+            return Response({"error": "Cart item not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        if quantity is not None:
+            try:
+                quantity = int(quantity)
+                if quantity < 1:
+                    return Response({"error": "Quantity must be a positive integer"}, status=status.HTTP_400_BAD_REQUEST)
+            except ValueError:
+                return Response({"error": "Invalid quantity value"}, status=status.HTTP_400_BAD_REQUEST)
+
+            cart_item.quantity = quantity
+            cart_item.save()
+            serializer = CartSerializer(cart_item)
+            return Response(serializer.data, status=status.HTTP_200_OK)
         
-        return Response({
-            "cart_data" : request.session['cart_data_obj'],
-            "total_cart_items" : len(request.session['cart_data_obj']),
-            "cart_total_amount" : cart_total_amount
-        }, status=status.HTTP_200_OK)
+        return Response({"error": "Quantity not provided"}, status=status.HTTP_400_BAD_REQUEST)
 
-class UpdateCartItem(APIView):
-    def post(self, request, format=None):
-        product_id = request.data.get('id')
-        product_qty = request.data.get('qty')
-        if 'cart_data_obj' in request.session:
-            if product_id in request.session['cart_data_obj']: 
-                cart_data = request.session['cart_data_obj'] 
-                cart_data[product_id]['qty'] = product_qty
-                request.session['cart_data_obj'] = cart_data
-        cart_total_amount = 0
-        for p_id, item in request.session['cart_data_obj'].items():
-            cart_total_amount += (int(item['qty']) * float(item['price']))
+    def delete(self, request, *args, **kwargs):
+        print(request.data)
+        cart_id = request.data.get('cart_id')
+
+        if not cart_id:
+            return Response({"error": "Cart ID not provided"}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            cart_item = Cart.objects.get(cart_id=cart_id)
+        except Cart.DoesNotExist:
+            return Response({"error": "Cart item not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        cart_item.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class ClearCartAPIView(APIView):
+    """
+    API View to delete all items in the cart for a specific user.
+    """
+    
+    def delete(self, request, *args, **kwargs):
+        user = request.user
+        if user.is_authenticated:
+            # Get all cart items for the user and delete them
+            Cart.objects.filter(user=user).delete()
+            return Response({"message": "All cart items deleted successfully."}, status=status.HTTP_200_OK)
+        else:
+            return Response({"error": "User not authenticated."}, status=status.HTTP_401_UNAUTHORIZED)
+
+class WishlistCreateView(generics.CreateAPIView):
+    queryset = Wishlist.objects.all()
+    serializer_class = WishlistSerializer
+    permission_classes = [IsAuthenticated]
+
+    def create(self, request, *args, **kwargs):
+        user = request.user
+        product_id = request.data.get('product')
+
+        if not product_id:
+            return Response({"error": "Product ID is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            product = Product.objects.get(pid=product_id)
+        except Product.DoesNotExist:
+            return Response({"error": "Product not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        wishlist = Wishlist(user=user, product=product)
+        wishlist.save()
+
+        serializer = self.get_serializer(wishlist)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+class WishlistListView(generics.ListAPIView):
+    serializer_class = WishlistSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return Wishlist.objects.filter(user=self.request.user)
+
+class WishlistDeleteView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request, *args, **kwargs):
+        wishlist_id = request.data.get('wishlist_id')
+        if not wishlist_id:
+            return Response({"error": "Wishlist ID is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            wishlist = Wishlist.objects.get(wishlist_id=wishlist_id, user=request.user)
+            wishlist.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        except Wishlist.DoesNotExist:
+            return Response({"error": "Wishlist not found"}, status=status.HTTP_404_NOT_FOUND)
+
+class AddressCreateView(generics.CreateAPIView):
+    serializer_class = AddressSerializer
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+    def create(self, request, *args, **kwargs):
+        data = request.data.copy()
+        data['user'] = request.user.id
+        serializer = self.get_serializer(data=data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+
+class AddressListView(generics.ListAPIView):
+    serializer_class = AddressSerializer
+
+    def get_queryset(self):
+        return Address.objects.filter(user=self.request.user)
+
+class DeleteAddressView(APIView):
+    def delete(self, request, address_id):
+        try:
+            address = Address.objects.get(address_id=address_id)
+        except Address.DoesNotExist:
+            raise NotFound("Address not found")
+
+        address.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+class UpdateAddressView(APIView):
+    def put(self, request, address_id):
+        try:
+            address = Address.objects.get(address_id=address_id)
+        except Address.DoesNotExist:
+            raise NotFound("Address not found")
+
+        serializer = AddressSerializer(address, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class ProductReviewListCreateView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, product_id):
+        """
+        List all reviews for a product.
+        """
+        reviews = ProductReview.objects.filter(product_id=product_id)
+        serializer = ProductReviewSerializer(reviews, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def post(self, request, product_id):
+        """
+        Create a new review for a product.
+        """
+        product = get_object_or_404(Product, pid=product_id)
+        serializer = ProductReviewSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save(user=request.user, product=product)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class ProductReviewDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get_object(self, product_id, review_id):
+        """
+        Helper method to get the review instance.
+        """
+        return get_object_or_404(ProductReview, product_id=product_id, id=review_id)
+
+    def get(self, request, product_id, review_id):
+        """
+        Retrieve a specific review for a product.
+        """
+        review = self.get_object(product_id, review_id)
+        serializer = ProductReviewSerializer(review)
+        return Response(serializer.data)
+
+    def put(self, request, product_id, review_id):
+        """
+        Update a review.
+        """
+        review = self.get_object(product_id, review_id)
+        if review.user != request.user:
+            return Response({"error": "You can only update your own reviews."}, status=status.HTTP_403_FORBIDDEN)
+
+        serializer = ProductReviewSerializer(review, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request, product_id, review_id):
+        """
+        Delete a review.
+        """
+        review = self.get_object(product_id, review_id)
+        if review.user != request.user:
+            return Response({"error": "You can only delete your own reviews."}, status=status.HTTP_403_FORBIDDEN)
         
-        return Response({
-            "cart_data" : request.session['cart_data_obj'],
-            "total_cart_items" : len(request.session['cart_data_obj']),
-            "cart_total_amount" : cart_total_amount
-        }, status=status.HTTP_200_OK)
+        review.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
-class CheckoutView(APIView):
-    def get(self, request, format=None):
-        cart_total_amount = 0
-        if 'cart_data_obj' in request.session:
-            for p_id, item in request.session['cart_data_obj'].items():
-                cart_total_amount += (int(item['qty']) * float(item['price']))
-        return Response({
-            "cart_data" : request.session['cart_data_obj'],
-            "total_cart_items" : len(request.session['cart_data_obj']),
-            "cart_total_amount" : cart_total_amount
-        }, status=status.HTTP_200_OK)      
 
-class CustomerDashboardView(APIView):
-    def get(self, request, format=None):
-        orders = CartOrder.objects.filter(user = request.user).order_by('-id')
-        serializer = CartOrderSerializer(data = orders, many=True)
+    
+class CreateOrderView(APIView):
+    """
+    API view for creating an order with multiple products
+    """
+
+    def post(self, request, *args, **kwargs):
+        user = request.user
+        products = request.data.get('product')  # Expecting a list of products with quantities
+        payment_method = request.data.get('payment_method')
+        address_data = request.data.get('address')  # Address data as a dictionary
+
+        # Validate required fields
+        if not products or not payment_method or not address_data:
+            return Response({"error": "Missing required fields"}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Initialize the total price for the order
+        total_price = 0
+        order_items = []
+
+        # Loop through the products and add each to the order
+        for item in products:
+            product_id = item.get('pid')
+            quantity = item.get('quantity', 1)
+            size = item.get('size')
+
+            # Validate product
+            product = get_object_or_404(Product, pid=product_id)
+
+            # Calculate total price for the current product
+            price_at_purchase = product.price
+            item_total = price_at_purchase * int(quantity)
+            total_price += item_total
+
+            # Add product details to order items list
+            order_items.append({
+                'product': product,
+                'quantity': quantity,
+                'price_at_purchase': price_at_purchase,
+                'item_total': item_total,
+                'size': size,
+            })
+
+        # Convert address_data (a dictionary) to an Address instance
+        try:
+            address, created = Address.objects.get_or_create(
+                user=user,
+                first_name=address_data['first_name'],
+                last_name=address_data['last_name'],
+                country=address_data['country'],
+                company_name=address_data.get('company_name'),
+                street_address=address_data['street_address'],
+                apartment=address_data.get('apartment'),
+                city=address_data['city'],
+                state=address_data['state'],
+                phone=address_data['phone'],
+                postal_code=address_data['postal_code'],
+                status=address_data.get('status', False)
+            )
+        except KeyError as e:
+            return Response({"error": f"Missing address field: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Create the order
+        order = Order.objects.create(
+            user=user,
+            total_price=total_price,
+            payment_method=payment_method,
+            address=address,  # Assign the Address instance
+            order_status="pending"
+        )
+
+        # Explicitly create OrderItem for each product
+        for item in order_items:
+            OrderItem.objects.create(
+                order=order,
+                product=item['product'],
+                quantity=item['quantity'],
+                size=item['size'],
+                price_at_purchase=item['price_at_purchase'],
+                item_total=item['item_total']
+            )
+
+        # Serialize the created order
+        serializer = OrderSerializer(order)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+
+class OrderListView(APIView):
+    """
+    API view to retrieve all orders of the authenticated user
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        user = request.user
+        # Get all orders placed by the user
+        orders = Order.objects.filter(user=user).order_by('-order_date')
+        # Serialize the orders
+        serializer = OrderSerializer(orders, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
     
-class OrderDetailView(APIView):
-    def get(self, request, id, format=None):
-        order = CartOrder.objects.get(user = request.user, id = id)
-        order_items = CartOrderItems.objects.filter(order = order)
+class RetrieveOrderView(APIView):
+    """
+    API view to retrieve a specific order by its order_id
+    """
+    def get(self, request, order_id, *args, **kwargs):
+        # Fetch the order based on order_id (UUID)
+        order = get_object_or_404(Order, order_id=order_id)
 
-        serializer = CartOrderItemsSerializer(data = order_items, many=True)
-
+        # Serialize the order and return the response
+        serializer = OrderSerializer(order)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+class ApplyCouponAPIView(APIView):
+    def post(self, request, *args, **kwargs):
+        serializer = ApplyCouponSerializer(data=request.data, context={'request': request})
+        if serializer.is_valid():
+            coupon = serializer.validated_data['name']
+            print("coupon", coupon)
+            # Store the coupon ID in the session (optional)
+            request.session['coupon_id'] = coupon.id
+
+            # Deactivate the coupon after use
+            coupon.used = True
+            coupon.active = False
+            coupon.save()
+
+            # Calculate discount amount or return success response
+            return Response(status=status.HTTP_200_OK)
         
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class CheckCouponAPIView(APIView):
+    def post(self, request, *args, **kwargs):
+        serializer = CheckCouponSerializer(data=request.data, context={'request': request})
+        if serializer.is_valid():
+            coupon = serializer.validated_data['code']
+            # Return success response indicating the coupon is valid
+            return Response({
+                'message': 'Coupon applied successfully!',
+                'discount_percentage': coupon.discount_percentage,
+                'coupon_name': coupon.name
+            }, status=status.HTTP_200_OK)
+        
+        # Return error response if coupon is not valid
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

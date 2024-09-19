@@ -8,12 +8,18 @@ import { limelightCatalog, mensCatalog, womensCatalog } from "../../data/data";
 import Brands from "../../components/home/Brands";
 import Feedback from "../../components/home/Feedback";
 import { getToken } from "../../services/LocalStorageService";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { useGetLoggedUserQuery } from "../../services/userAuthApi";
 import { setUserInfo } from '../../features/userSlice'
 import { useEffect } from "react";
 import { useGetPriceRangeQuery, useGetProductsQuery } from "../../services/userProductsApi";
 import { setColors, setPrice } from "../../features/productFilterSlice";
+import { useGetCartProductsQuery } from "../../services/userCartApi";
+import { addItemToCart, clearCart } from "../../features/cartSlice";
+import { useGetWishlistProductsQuery } from "../../services/userWishlistApi";
+import { addItemToWishlist } from "../../features/wishlistSlice";
+import { useGetUserAdressQuery } from "../../services/userAddressApi";
+import { addUserAddress } from "../../features/addressSlice";
 
 const HomeScreenWrapper = styled.main``;
 
@@ -22,21 +28,64 @@ const HomeScreen = () => {
   const dispatch = useDispatch();
   const { access_token } = getToken();
   const { data, isSuccess } = useGetLoggedUserQuery(access_token);
+  const { data: cartData, isSuccess: isSuccessCart } = useGetCartProductsQuery({ access_token });
+  const { data: wishlistData, isSuccess: isSuccessWishlist } = useGetWishlistProductsQuery({ access_token });
+  const { data: addressData, isSuccess: isSuccessAddress } = useGetUserAdressQuery({ access_token });
   const { data: priceRange, isSuccess: isSuccessPriceRange } = useGetPriceRangeQuery();
 
   useEffect(() => {
     if (data && isSuccess) {
-      console.log("[[[[[[[[[[[[[[[", data);
+      console.log("data", data);
+      
       dispatch(
         setUserInfo({
           id: data.id,
           email: data.email,
           username: data.username,
           get_avatar: data.get_avatar,
+          date_of_birth: data.date_of_birth,
+          gender: data.gender,
         })
       );
     }
   }, [data, isSuccess, dispatch]);
+
+  useEffect(() => {
+    if (cartData && isSuccessCart) {
+      // Assuming `cartData` is an array of cart items
+      dispatch(clearCart())
+      cartData.forEach((item) => {
+        dispatch(addItemToCart({
+          product: item.product,    // Assuming item contains a `product` field
+          quantity: item.quantity,   // Assuming item contains a `quantity` field
+          cart_id : item.cart_id,
+          size: item.size
+        }));
+      });
+    }
+  }, [cartData, isSuccessCart]);
+
+  useEffect(() => {
+    if (wishlistData && isSuccessWishlist) {
+      // Assuming `cartData` is an array of cart items
+      wishlistData.forEach((item) => {
+        dispatch(addItemToWishlist({
+          product: item.product,    // Assuming item contains a `product` field
+          wishlist_id : item.wishlist_id,
+        }));
+      });
+    }
+  }, [wishlistData, isSuccessWishlist]);
+  useEffect(() => {
+    if (addressData && isSuccessAddress) {
+      // Assuming `cartData` is an array of cart items
+      addressData.forEach((item) => {
+        dispatch(addUserAddress({
+          address: item,    // Assuming item contains a `product` field
+        }));
+      });
+    }
+  }, [addressData, isSuccessAddress]);
 
   useEffect(() => {
     if (isSuccessPriceRange) {

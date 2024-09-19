@@ -1,12 +1,16 @@
 import styled from "styled-components";
 import { Container } from "../../styles/styles";
 import Breadcrumb from "../../components/common/Breadcrumb";
-import { Link } from "react-router-dom";
-import { cartItems } from "../../data/data";
+import { Link, useNavigate } from "react-router-dom";
 import CartTable from "../../components/cart/CartTable";
 import { breakpoints } from "../../styles/themes/default";
 import CartDiscount from "../../components/cart/CartDiscount";
 import CartSummary from "../../components/cart/CartSummary";
+import { useDispatch, useSelector } from "react-redux";
+import { useGetCartProductsQuery } from "../../services/userCartApi";
+import { getToken } from "../../services/LocalStorageService";
+import { useEffect } from "react";
+import { addItemToCart } from "../../features/cartSlice";
 
 const CartPageWrapper = styled.main`
   padding: 48px 0;
@@ -53,6 +57,17 @@ const CartScreen = () => {
     { label: "Home", link: "/cart" },
     { label: "Add To Cart", link: "" },
   ];
+
+  const { cartItems, totalQuantity, totalPrice, discount } = useSelector(state => state.cart)
+
+  // Function to calculate the savings
+  const calculateSavings = () => {
+    return (totalPrice / (1 - discount / 100)) - totalPrice;
+  };
+
+  const savings = calculateSavings();
+
+
   return (
     <CartPageWrapper>
       <Container>
@@ -75,7 +90,7 @@ const CartScreen = () => {
           </div>
           <div className="grid cart-content-right">
             <CartDiscount />
-            <CartSummary />
+            <CartSummary totalQuantity={totalQuantity} totalPrice={totalPrice} savings={savings} />
           </div>
         </CartContent>
       </Container>

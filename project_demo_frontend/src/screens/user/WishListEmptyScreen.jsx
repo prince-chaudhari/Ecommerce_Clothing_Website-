@@ -61,7 +61,6 @@ const WishListEmptyScreen = () => {
           </UserContent>
         </UserDashboardWrapper>
       </Container>
-      <Catalog catalogTitle={"Recently Viewed"} products={recentViewedData} />
     </WishListEmptyScreenWrapper>
   );
 };

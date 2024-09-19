@@ -5,6 +5,8 @@ const initialState = {
   email: "",
   username: "",
   get_avatar: "",
+  date_of_birth: "",
+  gender: "",
 }
 
 export const userSlice = createSlice({
@@ -16,12 +18,16 @@ export const userSlice = createSlice({
       state.email = action.payload.email
       state.username = action.payload.username
       state.get_avatar = action.payload.get_avatar
+      state.date_of_birth = action.payload.date_of_birth
+      state.gender = action.payload.gender
     },
     unsetUserInfo: (state, action) => {
       state.id = action.payload.id
       state.email = action.payload.email
       state.username = action.payload.username
       state.get_avatar = action.payload.get_avatar
+      state.date_of_birth = action.payload.date_of_birth
+      state.gender = action.payload.gender
     },
 
   }

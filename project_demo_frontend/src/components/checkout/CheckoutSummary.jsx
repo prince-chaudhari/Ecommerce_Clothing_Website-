@@ -2,6 +2,7 @@ import styled from "styled-components";
 import { orderData } from "../../data/data";
 import { currencyFormat } from "../../utils/helper";
 import { breakpoints, defaultTheme } from "../../styles/themes/default";
+import { useSelector } from "react-redux";
 
 const CheckoutSummaryWrapper = styled.div`
   box-shadow: 2px 2px 4px 0px rgba(0, 0, 0, 0.05),
@@ -75,18 +76,26 @@ const CheckoutSummaryWrapper = styled.div`
 `;
 
 const CheckoutSummary = () => {
+  const { cartItems, cartCnt, totalPrice, totalQuantity, discount } = useSelector(state => state.cart)
+
+  const calculateSavings = () => {
+    return (totalPrice / (1 - discount / 100)) - totalPrice;
+  };
+
+  const savings = calculateSavings();
+  
   return (
     <CheckoutSummaryWrapper>
       <h4 className="text-xxl font-bold text-outersapce">
         Checkout Order Summary
       </h4>
       <div className="order-list grid">
-        {orderData[0]?.items?.map((order) => {
+        {cartItems?.map((order) => {
           return (
-            <div className="order-item grid" key={order.id}>
+            <div className="order-item grid" key={order.cart_id}>
               <div className="order-item-img">
                 <img
-                  src={order.imgSource}
+                  src={order.product.product_image}
                   className="object-fit-cover"
                   alt=""
                 />
@@ -94,16 +103,20 @@ const CheckoutSummary = () => {
               <div className="order-item-info flex justify-between">
                 <div className="order-item-info-l">
                   <p className="text-base font-bold text-outerspace">
-                    {order.name}&nbsp;
+                    {order.product.title}&nbsp;
                     <span className="text-gray">x{order.quantity}</span>
                   </p>
                   <p className="text-base font-bold text-outerspaace">
                     Color: &nbsp;
-                    <span className="text-gray font-normal">{order.color}</span>
+                    <span className="text-gray font-normal">{order.product.color}</span>
+                  </p>
+                  <p className="text-base font-bold text-outerspaace">
+                    Size: &nbsp;
+                    <span className="text-gray font-normal">{order.size}</span>
                   </p>
                 </div>
                 <div className="order-item-info-r text-gray font-bold text-base">
-                  {currencyFormat(order.price)}
+                  {order.product.price}
                 </div>
               </div>
             </div>
@@ -114,22 +127,22 @@ const CheckoutSummary = () => {
       <ul className="order-info">
         <li className="flex items-center justify-between">
           <span className="text-outerspace font-bold text-lg">
-            Subtotal <span className="text-gray font-semibold">(3 items)</span>
+            Subtotal <span className="text-gray font-semibold">({cartCnt} items)</span>
           </span>
-          <span className="text-outerspace font-bold text-lg">$513.00</span>
+          <span className="text-outerspace font-bold text-lg">₹{totalPrice}</span>
         </li>
         <li className="flex items-center justify-between">
           <span className="text-outerspace font-bold text-lg">Savings</span>
-          <span className="text-outerspace font-bold text-lg">-$30.00</span>
+          <span className="text-outerspace font-bold text-lg">₹{savings}</span>
         </li>
         <li className="flex items-center justify-between">
           <span className="text-outerspace font-bold text-lg">Shipping</span>
-          <span className="text-outerspace font-bold text-lg">-$5.00</span>
+          <span className="text-outerspace font-bold text-lg">₹0</span>
         </li>
         <li className="list-separator"></li>
         <li className="flex items-center justify-between">
           <span className="text-outerspace font-bold text-lg">Total</span>
-          <span className="text-outerspace font-bold text-lg">$478.00</span>
+          <span className="text-outerspace font-bold text-lg">₹{totalPrice}</span>
         </li>
       </ul>
     </CheckoutSummaryWrapper>

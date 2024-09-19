@@ -39,6 +39,20 @@ export const userAuthApi = createApi({
           }
         }
       },
+      providesTags: ['ChangeUserProfile'],
+    }),
+    changeUserProfile: builder.mutation({
+      query: ({ actualData, access_token }) => {
+        return {
+          url: 'editprofile/',
+          method: 'POST',
+          body: actualData,
+          headers: {
+            'authorization': `Bearer ${access_token}`,
+          }
+        }
+      },
+      invalidatesTags: ['ChangeUserProfile'],
     }),
     changeUserPassword: builder.mutation({
       query: ({ actualData, access_token }) => {
@@ -79,4 +93,4 @@ export const userAuthApi = createApi({
   }),
 })
 
-export const { useRegisterUserMutation, useLoginUserMutation, useGetLoggedUserQuery, useChangeUserPasswordMutation, useSendPasswordResetEmailMutation, useResetPasswordMutation } = userAuthApi
+export const { useRegisterUserMutation, useLoginUserMutation, useGetLoggedUserQuery, useChangeUserPasswordMutation, useSendPasswordResetEmailMutation, useResetPasswordMutation, useChangeUserProfileMutation } = userAuthApi

@@ -4,6 +4,10 @@ from django.utils.html import mark_safe
 from account.models import User
 from taggit.managers import TaggableManager
 from django.conf import settings
+from django.utils.timesince import timesince
+import pytz
+from django.utils import timezone
+from django.core.validators import MinValueValidator, MaxValueValidator
 
 STATUS_CHOICE = (
     ("processing", "Processing"),
@@ -156,31 +160,21 @@ class ProductImages(models.Model):
         else:
             return 'https://picsum.photos/200/200'
 
-class CartOrder(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
-    price = models.DecimalField(max_digits=99999999999999, decimal_places=2, default="1.99")
-    paid_status = models.BooleanField(default=False)
-    order_date = models.DateTimeField(auto_now_add=True)
-    product_status = models.CharField(choices=STATUS_CHOICE, max_length=30, default="processing")
-
-    class Meta:
-        verbose_name_plural = "Cart Order"
+class Cart(models.Model):
+    cart_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='carts', null=True, blank=True)
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='cart_items')
+    quantity = models.PositiveIntegerField(default=1)
+    size = models.CharField(max_length=30)
+    added_on = models.DateTimeField(auto_now_add=True)
     
-class CartOrderItems(models.Model):
-    order = models.ForeignKey(CartOrder, on_delete=models.CASCADE)
-    invoice_no = models.CharField(max_length=200)
-    product_status = models.CharField(max_length=200)
-    item = models.CharField(max_length=200)
-    image = models.CharField(max_length=200)
-    qty = models.IntegerField(default=0)  
-    price = models.DecimalField(max_digits=99999999999999, decimal_places=2, default="1.99")
-    total = models.DecimalField(max_digits=99999999999999, decimal_places=2, default="1.99")
+    def __str__(self):
+        return f"{self.product.title} - {self.quantity} pcs"
 
-    class Meta:
-        verbose_name_plural = "Cart Order Items"
+    def get_total_price(self):
+        return self.product.price * self.quantity
 
-    def order_img(self):
-        return mark_safe('<img src="/media/%s" width="50" height="50" />' % (self.image))
+    
     
 class ProductReview(models.Model):
     user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
@@ -198,7 +192,11 @@ class ProductReview(models.Model):
     def get_rating(self):
         return self.rating
 
+    def created_at_formatted(self):
+       return timesince(self.date)
+
 class Wishlist(models.Model):
+    wishlist_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
     product = models.ForeignKey(Product, on_delete=models.SET_NULL, null=True)
     date = models.DateTimeField(auto_now_add=True)
@@ -210,9 +208,98 @@ class Wishlist(models.Model):
         return self.product.title
 
 class Address(models.Model):
+    address_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
-    address = models.CharField(max_length=100, null=True)
+    first_name = models.CharField(max_length=50)
+    last_name = models.CharField(max_length=50)
+    country = models.CharField(max_length=50)
+    company_name = models.CharField(max_length=100, blank=True, null=True)
+    street_address = models.CharField(max_length=100)
+    apartment = models.CharField(max_length=50, blank=True, null=True)
+    city = models.CharField(max_length=50)
+    state = models.CharField(max_length=50)
+    phone = models.CharField(max_length=20)
+    postal_code = models.CharField(max_length=20)
+    delivery_instruction = models.TextField(blank=True, null=True)
+    default_shipping = models.BooleanField(default=False)
+    default_billing = models.BooleanField(default=False)
     status = models.BooleanField(default=False)
 
     class Meta:
-        verbose_name_plural = "Adress"
+        verbose_name_plural = "Addresses"
+
+    def __str__(self):
+        return f"{self.first_name} {self.last_name} - {self.street_address}, {self.city}, {self.state}"
+
+
+class OrderItem(models.Model):
+    order = models.ForeignKey('Order', on_delete=models.CASCADE, related_name='order_items')
+    product = models.ForeignKey('Product', on_delete=models.CASCADE)
+    quantity = models.PositiveIntegerField(default=1)
+    price_at_purchase = models.DecimalField(max_digits=99999999999999, decimal_places=2)
+    item_total = models.DecimalField(max_digits=99999999999999, decimal_places=2)
+    size = models.CharField(max_length=30)
+
+    def __str__(self):
+        return f"{self.quantity} of {self.product.title}"
+
+class Order(models.Model):
+    status_choices = (
+        ('pending', 'Pending'),
+        ('shipped', 'Shipped'),
+        ('delivered', 'Delivered'),
+        ('cancelled', 'Cancelled'),
+    )
+    PAYMENT_METHOD_CHOICES = (
+        ('credit_card', 'Credit Card'),
+        ('debit_card', 'Debit Card'),
+        ('paypal', 'PayPal'),
+        ('bank_transfer', 'Bank Transfer'),
+        ('cash_on_delivery', 'Cash on Delivery'),
+    )
+    order_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='orders')
+    total_price = models.DecimalField(max_digits=99999999999999, decimal_places=2, blank=True, null=True)
+    payment_method = models.CharField(max_length=20, choices=PAYMENT_METHOD_CHOICES, default='credit_card')
+    address = models.ForeignKey(Address, related_name="user_order_address", on_delete=models.CASCADE)
+    order_status = models.CharField(max_length=10, choices=status_choices, default='pending')
+    order_date = models.DateTimeField(auto_now_add=True)
+    updated = models.DateTimeField(auto_now=True)
+
+    products = models.ManyToManyField(Product, through=OrderItem)
+
+    class Meta:
+        verbose_name_plural = "Orders"
+
+    def __str__(self):
+        return f"Order {self.order_id} by {self.user}"
+    
+    def order_date_formatted(self):
+        # Get the 'Asia/Kolkata' timezone
+        india_timezone = pytz.timezone('Asia/Kolkata')
+        
+        # Convert the order_date to the India timezone
+        local_order_date = self.order_date.astimezone(india_timezone)
+        
+        # Format the date and time
+        return local_order_date.strftime("%d %B %Y %I:%M %p")
+    
+class Coupon(models.Model):
+    name = models.CharField(max_length=50, unique=True)  # Unique coupon code
+    code = models.CharField(max_length=50, unique=True)  # Unique coupon code
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='coupons')
+    discount_percentage = models.FloatField(
+        validators=[MinValueValidator(0), MaxValueValidator(100)], 
+        help_text="Discount percentage (0-100)"
+    )
+    valid_from = models.DateTimeField()
+    valid_to = models.DateTimeField()
+    active = models.BooleanField(default=True)
+    used = models.BooleanField(default=False)  # Track if the coupon has been used
+
+    def is_valid(self):
+        """Check if the coupon is valid based on time and active status."""
+        return self.active and not self.used and self.valid_from <= timezone.now() <= self.valid_to
+
+    def __str__(self):
+        return self.code

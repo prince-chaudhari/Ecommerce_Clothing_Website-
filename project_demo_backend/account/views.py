@@ -7,6 +7,7 @@ from account.renderers import UserRenderer
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
+from .forms import ProfileForm
 
 # Generate Token Manually
 def get_tokens_for_user(user):
@@ -20,6 +21,7 @@ class UserRegistrationView(APIView):
   renderer_classes = [UserRenderer]
   permission_classes = []
   def post(self, request, format=None):
+    print(request.data)
     serializer = UserRegistrationSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
     user = serializer.save()
@@ -50,12 +52,13 @@ class UserProfileView(APIView):
     return Response(serializer.data, status=status.HTTP_200_OK)
 
 class UserChangePasswordView(APIView):
-  renderer_classes = [UserRenderer]
-  permission_classes = [IsAuthenticated]
-  def post(self, request, format=None):
-    serializer = UserChangePasswordSerializer(data=request.data, context={'user':request.user})
-    serializer.is_valid(raise_exception=True)
-    return Response({'msg':'Password Changed Successfully'}, status=status.HTTP_200_OK)
+    renderer_classes = [UserRenderer]
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, format=None):
+        serializer = UserChangePasswordSerializer(data=request.data, context={'user': request.user})
+        serializer.is_valid(raise_exception=True)
+        return Response({'msg': 'Password changed successfully'}, status=status.HTTP_200_OK)
 
 class SendPasswordResetEmailView(APIView):
   renderer_classes = [UserRenderer]
@@ -63,6 +66,23 @@ class SendPasswordResetEmailView(APIView):
     serializer = SendPasswordResetEmailSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
     return Response({'msg':'Password Reset link send. Please check your Email'}, status=status.HTTP_200_OK)
+
+
+class EditProfile(APIView):
+    renderer_classes = [UserRenderer]
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, format=None):
+        user = request.user
+        form = ProfileForm(request.data, instance=user)  # or instance=profile if profile exists
+        
+        if form.is_valid():
+            form.save()
+            serializer = UserProfileSerializer(user)
+            return Response({'message': 'Information updated', 'user': serializer.data})
+        else:
+            # Return the form errors to help debug
+            return Response({'message': 'Failed to update', 'errors': form.errors}, status=400)
 
 class UserPasswordResetView(APIView):
   renderer_classes = [UserRenderer]

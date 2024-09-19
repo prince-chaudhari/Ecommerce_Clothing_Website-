@@ -67,6 +67,7 @@ const CartTable = ({ cartItems }) => {
     "Action",
   ];
 
+
   return (
     <ScrollbarXWrapper>
       <CartTableWrapper className="w-full">
@@ -86,7 +87,7 @@ const CartTable = ({ cartItems }) => {
         </thead>
         <tbody>
           {cartItems.map((cartItem) => {
-            return <CartItem key={cartItem.id} cartItem={cartItem} />;
+            return <CartItem key={cartItem.cart_id} cartItem={cartItem} />;
           })}
         </tbody>
       </CartTableWrapper>

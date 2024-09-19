@@ -58,6 +58,28 @@ const BaseLinkGreen = styled(BaseLink)`
   border-color: ${defaultTheme.color_sea_green};
 `;
 
+const AddToCartButton = styled.button`
+  background-color: ${defaultTheme.color_sea_green};
+  border: 1px solid ${defaultTheme.color_sea_green};
+  color: white;
+  border-radius : 7px;
+  padding: 10px 20px;
+  font-size: 16px;
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+  transition: ${defaultTheme.default_transition};
+  
+  &:hover {
+    background-color: ${defaultTheme.color_sea_green_dark}; /* Add hover effect */
+  }
+
+  .prod-add-btn-icon {
+    margin-right: 8px;
+  }
+`;
+
+
 const BaseLinkBlack = styled(BaseLink)`
   background-color: ${defaultTheme.color_black};
 `;
@@ -100,4 +122,5 @@ export {
   BaseLinkOutlineDark,
   BaseLinkOutlineWhite,
   BaseLinkOutlinePlatinum,
+  AddToCartButton
 };

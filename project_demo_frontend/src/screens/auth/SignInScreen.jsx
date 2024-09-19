@@ -13,7 +13,7 @@ import { setUserToken } from '../../features/authSlice';
 import { getToken, storeToken } from '../../services/LocalStorageService';
 import { useLoginUserMutation } from '../../services/userAuthApi';
 import { useDispatch } from 'react-redux';
-import { Alert, Typography } from "@mui/material";
+import { Alert, Typography, CircularProgress } from "@mui/material"; // Imported CircularProgress
 
 const SignInScreenWrapper = styled.section`
   .form-separator {
@@ -47,9 +47,9 @@ const SignInScreenWrapper = styled.section`
 
 const SignInScreen = () => {
   const [server_error, setServerError] = useState({});
-  const [alertVisible, setAlertVisible] = useState(false); // New state for alert visibility
+  const [alertVisible, setAlertVisible] = useState(false); // State for alert visibility
   const navigate = useNavigate();
-  const [loginUser, { isLoading }] = useLoginUserMutation();
+  const [loginUser, { isLoading }] = useLoginUserMutation(); // Destructured isLoading
   const dispatch = useDispatch();
 
   const handleSubmit = async (e) => {
@@ -78,12 +78,12 @@ const SignInScreen = () => {
     dispatch(setUserToken({ access_token: access_token }));
   }, [access_token, dispatch]);
 
-  // Hide the alert after 3-4 seconds
+  // Hide the alert after 3 seconds
   useEffect(() => {
     if (alertVisible) {
       const timer = setTimeout(() => {
         setAlertVisible(false); // Hide the alert
-      }, 3000); // Alert disappears after 4 seconds
+      }, 3000); // Alert disappears after 3 seconds
 
       return () => clearTimeout(timer); // Cleanup timeout on unmount
     }
@@ -124,19 +124,26 @@ const SignInScreen = () => {
                   {server_error.email ? <Typography style={{ fontSize: 12, color: 'red', paddingLeft: 10 }}>{server_error.email[0]}</Typography> : ""}
                 </FormElement>
                 <PasswordInput fieldName="Password" name="password" />
-                {server_error.password ?
-                  (<p style={{ "marginTop": "-15px", "marginBottom": "20px" }}>
+                {server_error.password ? (
+                  <p style={{ "marginTop": "-15px", "marginBottom": "20px" }}>
                     <Typography style={{ fontSize: 12, color: "red", paddingLeft: 10 }}>
                       {server_error.password[0]}
                     </Typography>
-                  </p>)
-                  : ""
-                }
+                  </p>
+                ) : ""}
                 <Link to="/reset" className="form-elem-text text-end font-medium">
                   Forgot your password?
                 </Link>
-                <BaseButtonBlack type="submit" className="form-submit-btn">
-                  Sign In
+                <BaseButtonBlack
+                  type="submit"
+                  className="form-submit-btn"
+                  disabled={isLoading} // Disable button when loading
+                >
+                  {isLoading ? ( // Show loader if loading
+                    <CircularProgress size={24} style={{ color: "white" }} />
+                  ) : (
+                    "Sign In"
+                  )}
                 </BaseButtonBlack>
                 {/* Show alert if alertVisible is true */}
                 {alertVisible && server_error.non_field_errors ? (
@@ -147,7 +154,7 @@ const SignInScreen = () => {
               </form>
 
               <p className="flex flex-wrap account-rel-text">
-                Don&apos;t have a account?
+                Don&apos;t have an account?
                 <Link to="/sign_up" className="font-medium">
                   Sign Up
                 </Link>

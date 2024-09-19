@@ -97,6 +97,7 @@ const ProductPreview = ({ mainImage, previewImages }) => {
           <div
             className="preview-item-wrapper"
             key={previewImage.id}
+            id={previewImage.id}
             onClick={() => handlePreviewImageChange(previewImage.product_images)}
           >
             <div className="preview-item">

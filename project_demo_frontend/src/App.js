@@ -26,9 +26,16 @@ import Account from "./screens/user/AccountScreen";
 import Address from "./screens/user/AddressScreen";
 import { useSelector } from "react-redux";
 import './App.css';
+import { getToken } from "./services/LocalStorageService";
+import ChangePasswordScreen from "./screens/user/ChangePasswordScreen";
+import ShippingPayment from "./components/checkout/ShippingPayment";
+
 
 function App() {
   const { access_token } = useSelector(state => state.auth)
+  const { wishlistCnt } = useSelector(state => state.wishlist || {});
+  const { cartCnt } = useSelector(state => state.cart || {});
+
   return (
     <>
       <Router>
@@ -39,16 +46,19 @@ function App() {
             <Route index element={<Home />} />
             <Route path="/product" element={<ProductList />} />
             <Route path="/product/details/:pid" element={<ProductDetails />} />
-            <Route path="/cart" element={access_token ? <Cart /> : <Navigate to="/sign_in" />} />
+            <Route path="/cart" element={access_token ? cartCnt > 0 ? <Cart /> : <Navigate to="/empty_cart" /> : <Navigate to="/sign_in" />} />
             <Route path="/empty_cart" element={access_token ? <CartEmpty /> : <Navigate to="/sign_in" />} />
             <Route path="/checkout" element={access_token ? <Checkout /> : <Navigate to="/sign_in" />} />
+            <Route path="/checkout/payment" element={access_token ? <ShippingPayment /> : <Navigate to="/sign_in" />} />
             <Route path="/order" element={access_token ? <Order /> : <Navigate to="/sign_in" />} />
-            <Route path="/order_detail" element={access_token ? <OrderDetail /> : <Navigate to="/sign_in" />} />
-            <Route path="/wishlist" element={access_token ? <WishList /> : <Navigate to="/sign_in" />} />
+            <Route path="/order_detail/:orderId" element={access_token ? <OrderDetail /> : <Navigate to="/sign_in" />} />
+            <Route path="/wishlist" element={access_token ? wishlistCnt > 0 ? <WishList /> : <Navigate to="/empty_wishlist" /> : <Navigate to="/sign_in" />} />
             <Route path="/empty_wishlist" element={access_token ? <WishListEmpty /> : <Navigate to="/sign_in" />} />
             <Route path="/confirm" element={access_token ? <Confirm /> : <Navigate to="/sign_in" />} />
             <Route path="/account" element={access_token ? <Account /> : <Navigate to="/sign_in" />} />
             <Route path="/account/add" element={access_token ? <Address /> : <Navigate to="/sign_in" />} />
+            <Route path="/account/address/edit/:addressId" element={access_token ? <Address /> : <Navigate to="/sign_in" />} />
+            <Route path="/account/changepassword" element={access_token ? <ChangePasswordScreen /> : <Navigate to="/sign_in" />} />
           </Route>
 
           {/* auth screens */}

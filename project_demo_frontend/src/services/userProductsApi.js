@@ -21,6 +21,26 @@ export const userProductsApi = createApi({
                 body: filters, // Send filters as the body of the request
             }),
         }),
+        applyCoupon: builder.mutation({
+            query: ({data, access_token}) => ({
+                url: 'apply-coupon/', // Use a different endpoint for POST requests
+                method: 'POST',
+                body:data,
+                headers: {
+                    'authorization': `Bearer ${access_token}`,
+                }
+            }),
+        }),
+        checkCoupon: builder.mutation({
+            query: ({data, access_token}) => ({
+                url: 'check-coupon/', // Use a different endpoint for POST requests
+                method: 'POST',
+                body:data,
+                headers: {
+                    'authorization': `Bearer ${access_token}`,
+                }
+            }),
+        }),
         getProduct: builder.query({
             query: ({ pid }) => {
                 return {
@@ -28,7 +48,7 @@ export const userProductsApi = createApi({
                     method: 'GET',
                 }
             },
-
+            providesTags: ['UserReview', 'UserDeleteReview'],
         }),
         getPriceRange: builder.query({
             query: () => {
@@ -61,4 +81,4 @@ export const userProductsApi = createApi({
     }),
 })
 
-export const { useGetProductsQuery, useFilterProductsMutation, useGetProductQuery, useGetPriceRangeQuery, useGetColorListQuery, useGetSizeListQuery } = userProductsApi
+export const { useGetProductsQuery, useFilterProductsMutation, useGetProductQuery, useGetPriceRangeQuery, useGetColorListQuery, useGetSizeListQuery, useCheckCouponMutation, useApplyCouponMutation } = userProductsApi

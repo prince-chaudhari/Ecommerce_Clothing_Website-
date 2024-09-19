@@ -3,11 +3,13 @@ import { Container } from "../../styles/styles";
 import Breadcrumb from "../../components/common/Breadcrumb";
 import { UserContent, UserDashboardWrapper } from "../../styles/user";
 import UserMenu from "../../components/user/UserMenu";
-import { Link } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import Title from "../../components/common/Title";
 import { orderData } from "../../data/data";
 import { currencyFormat } from "../../utils/helper";
 import { breakpoints, defaultTheme } from "../../styles/themes/default";
+import { useGetOrderProductQuery } from "../../services/userOrderApi";
+import { getToken } from "../../services/LocalStorageService";
 
 const OrderDetailScreenWrapper = styled.main`
   .btn-and-title-wrapper {
@@ -68,6 +70,7 @@ const OrderDetailStatusWrapper = styled.div`
       position: absolute;
       top: 50%;
       transform: translateY(-50%);
+      background-color: ${defaultTheme.color_silver}; /* Default color */
 
       &:nth-child(1) {
         left: 0;
@@ -80,35 +83,13 @@ const OrderDetailStatusWrapper = styled.div`
       &:nth-child(3) {
         left: calc(66.6666% - 10px);
       }
+
       &:nth-child(4) {
         right: 0;
       }
 
-      &.status-done {
-        background-color: ${defaultTheme.color_outerspace};
-        .order-status-text {
-          color: ${defaultTheme.color_outerspace};
-        }
-      }
-
-      &.status-current {
-        position: absolute;
-        &::after {
-          content: "";
-          position: absolute;
-          width: 12px;
-          height: 12px;
-          background-color: ${defaultTheme.color_outerspace};
-          left: 50%;
-          top: 50%;
-          transform: translate(-50%, -50%);
-          z-index: 30;
-          border-radius: 50%;
-        }
-
-        .order-status-text {
-          color: ${defaultTheme.color_outerspace};
-        }
+      &.status-active {
+        background-color: ${defaultTheme.color_black}; /* Active status color */
       }
     }
 
@@ -120,6 +101,7 @@ const OrderDetailStatusWrapper = styled.div`
     }
   }
 `;
+
 
 const OrderDetailMessageWrapper = styled.div`
   background-color: ${defaultTheme.color_whitesmoke};
@@ -254,6 +236,31 @@ const breadcrumbItems = [
 ];
 
 const OrderDetailScreen = () => {
+  const { orderId } = useParams();
+  const { access_token } = getToken()
+
+  const { data, isSuccess, isLoading, isError } = useGetOrderProductQuery({ order_id: orderId, access_token });
+  console.log(data);
+
+  if (isLoading) {
+    return <div>Loading...</div>; // or a spinner/loading component
+  }
+
+  if (isError) {
+    return <div>Error loading product details.</div>;
+  }
+
+  const statusMapping = {
+    'pending': 2,
+    'shipped': 3,
+    'delivered': 4,
+    'cancelled': 0,  // You can decide how to handle cancelled orders
+  };
+  
+  const currentStatus = statusMapping[data.order_status]; // orderStatus comes from your backend
+  console.log(data.order_status);
+  
+
   return (
     <OrderDetailScreenWrapper className="page-py-spacing">
       <Container>
@@ -275,41 +282,42 @@ const OrderDetailScreen = () => {
               <div className="order-d-top flex justify-between items-start">
                 <div className="order-d-top-l">
                   <h4 className="text-3xl order-d-no">
-                    Order no: #47770098867
+                    Order no: #{data.order_id}
                   </h4>
                   <p className="text-lg font-medium text-gray">
-                    Placed On 2 June 2023 2:40 PM
+                    Placed On {data.order_date_formatted}
                   </p>
                 </div>
                 <div className="order-d-top-r text-xxl text-gray font-semibold">
-                  Total: <span className="text-outerspace">$143.00</span>
+                  Total: <span className="text-outerspace">₹{data.total_price}</span>
                 </div>
               </div>
 
-              <OrderDetailStatusWrapper className="order-d-status">
+              <OrderDetailStatusWrapper className="order-d-status" status={currentStatus}>
                 <div className="order-status bg-silver">
-                  <div className="order-status-dot status-done bg-silver">
-                    <span className="order-status-text font-semibold text-center no-wrap text-silver">
+                  <div className={`order-status-dot status-active`}>
+                    <span className="order-status-text font-semibold text-center no-wrap">
                       Order Placed
                     </span>
                   </div>
-                  <div className="order-status-dot status-current bg-silver">
-                    <span className="order-status-text font-semibold text-center no-wrap text-silver">
+                  <div className={`order-status-dot ${currentStatus >= 2 ? 'status-active' : ''}`}>
+                    <span className="order-status-text font-semibold text-center no-wrap">
                       In Progress
                     </span>
                   </div>
-                  <div className="order-status-dot bg-silver">
-                    <span className="order-status-text font-semibold text-center no-wrap text-silver">
+                  <div className={`order-status-dot ${currentStatus >= 3 ? 'status-active' : ''}`}>
+                    <span className="order-status-text font-semibold text-center no-wrap">
                       Shipped
                     </span>
                   </div>
-                  <div className="order-status-dot bg-silver">
-                    <span className="order-status-text font-semibold text-center no-wrap text-silver">
+                  <div className={`order-status-dot ${currentStatus >= 4 ? 'status-active' : ''}`}>
+                    <span className="order-status-text font-semibold text-center no-wrap">
                       Delivered
                     </span>
                   </div>
                 </div>
               </OrderDetailStatusWrapper>
+
               <OrderDetailMessageWrapper className="order-message flex items-center justify-start">
                 <p className="font-semibold text-gray">
                   8 June 2023 3:40 PM &nbsp;
@@ -320,22 +328,28 @@ const OrderDetailScreen = () => {
               </OrderDetailMessageWrapper>
 
               <OrderDetailListWrapper className="order-d-list">
-                {orderData[0].items?.map((item) => {
+                {data.order_items.map((item) => {
                   return (
-                    <div className="order-d-item grid" key={item.id}>
+                    <div className="order-d-item grid" key={item.product.pid}>
                       <div className="order-d-item-img">
                         <img
-                          src={item.imgSource}
+                          src={item.product.product_image}
                           alt=""
                           className="object-fit-cover"
                         />
                       </div>
                       <div className="order-d-item-info">
-                        <p className="text-xl font-bold">{item.name}</p>
+                        <p className="text-xl font-bold">{item.product.title}</p>
                         <p className="text-md font-bold">
                           Color: &nbsp;
                           <span className="font-medium text-gray">
-                            {item.color}
+                            {item.product.color}
+                          </span>
+                        </p>
+                        <p className="text-md font-bold">
+                          Size: &nbsp;
+                          <span className="font-medium text-gray">
+                            {item.size}
                           </span>
                         </p>
                       </div>
@@ -347,16 +361,10 @@ const OrderDetailScreen = () => {
                         <p className="font-bold text-lg">
                           Price: &nbsp;
                           <span className="text-gray">
-                            {currencyFormat(item.price)}
+                            {item.product.price}
                           </span>
                         </p>
                       </div>
-                      <button
-                        type="button"
-                        className="text-xl text-outerspace order-d-item-btn"
-                      >
-                        <i className="bi bi-x-lg"></i>
-                      </button>
                     </div>
                   );
                 })}

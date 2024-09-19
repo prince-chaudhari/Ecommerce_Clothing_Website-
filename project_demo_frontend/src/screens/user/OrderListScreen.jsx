@@ -5,8 +5,9 @@ import { UserContent, UserDashboardWrapper } from "../../styles/user";
 import UserMenu from "../../components/user/UserMenu";
 import Title from "../../components/common/Title";
 import { breakpoints, defaultTheme } from "../../styles/themes/default";
-import { orderData } from "../../data/data";
 import OrderItemList from "../../components/user/OrderItemList";
+import { useGetOrderProductsQuery } from "../../services/userOrderApi";
+import { getToken } from "../../services/LocalStorageService";
 
 const OrderListScreenWrapper = styled.div`
   .order-tabs-contents {
@@ -37,6 +38,10 @@ const breadcrumbItems = [
 ];
 
 const OrderListScreen = () => {
+  const { access_token } = getToken();
+  const { data: orderData, isSuccess: isSuccessOrder } = useGetOrderProductsQuery({ access_token });
+  console.log(orderData);
+  
   return (
     <OrderListScreenWrapper className="page-py-spacing">
       <Container>
@@ -72,13 +77,13 @@ const OrderListScreen = () => {
 
               <div className="order-tabs-contents">
                 <div className="order-tabs-content" id="active">
-                    <OrderItemList orders = {orderData} />
+                  <OrderItemList orders={orderData} />
                 </div>
                 <div className="order-tabs-content" id="cancelled">
-                    Cancelled content
+                  Cancelled content
                 </div>
                 <div className="order-tabs-content" id="completed">
-                    Completed content
+                  Completed content
                 </div>
               </div>
             </div>
