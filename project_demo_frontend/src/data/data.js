@@ -3,28 +3,18 @@ import { staticImages } from "../utils/images";
 const navMenuData = [
   {
     id: "nav-menu-1",
-    menuLink: "/",
+    menuLink: "/product",
     menuText: "Shop",
   },
   {
     id: "nav-menu-2",
-    menuLink: "/",
+    menuLink: "/product",
     menuText: "Men",
   },
   {
     id: "nav-menu-3",
-    menuLink: "/",
+    menuLink: "/product",
     menuText: "Women",
-  },
-  {
-    id: "nav-menu-4",
-    menuLink: "/",
-    menuText: "Combos",
-  },
-  {
-    id: "nav-menu-5",
-    menuLink: "/",
-    menuText: "Fashion",
   },
 ];
 

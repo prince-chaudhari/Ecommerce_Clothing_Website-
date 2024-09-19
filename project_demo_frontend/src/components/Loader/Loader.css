@@ -1,24 +1,51 @@
-.loading {
-  width: 100vw;
+/* Loader.css */
+.loader {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   height: 100vh;
-  background-color: white;
-  display: grid;
-  place-items: center;
-  max-width: 100%;
+  background-color: #f9f9f9; /* Light background for contrast */
 }
 
-.loading > div {
-  width: 10vmax;
-  height: 10vmax;
-  border-bottom: 5px solid rgba(0, 0, 0, 0.719);
-
+.spinner {
+  border: 6px solid rgba(0, 0, 0, 0.1);
+  border-top: 6px solid #3498db; /* Blue top border */
   border-radius: 50%;
-
-  animation: loadingRotate 800ms linear infinite;
+  width: 60px;
+  height: 60px;
+  animation: spin 1s ease-in-out infinite;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Add slight shadow */
+  margin-bottom: 20px;
 }
 
-@keyframes loadingRotate {
-  to {
-    transform: rotateZ(-360deg);
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+p {
+  font-family: 'Arial', sans-serif;
+  font-size: 18px;
+  font-weight: 500;
+  color: #2c3e50; /* Darker text for better readability */
+  letter-spacing: 0.5px;
+  margin-top: 10px;
+}
+
+/* Media query for responsiveness on smaller screens */
+@media (max-width: 768px) {
+  .spinner {
+    width: 40px;
+    height: 40px;
+    border-width: 4px;
+  }
+
+  p {
+    font-size: 16px;
   }
 }

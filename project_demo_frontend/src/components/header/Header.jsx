@@ -15,7 +15,7 @@ const NavigationAndSearchWrapper = styled.div`
   .search-form {
     @media (max-width: ${breakpoints.lg}) {
       width: 100%;
-      max-width: 500px;
+      max-width: 800px; // Further increased max-width
     }
     @media (max-width: ${breakpoints.sm}) {
       display: none;
@@ -23,7 +23,7 @@ const NavigationAndSearchWrapper = styled.div`
   }
 
   .input-group {
-    min-width: 320px;
+    min-width: 600px; // Further increased min-width
 
     .input-control {
       @media (max-width: ${breakpoints.sm}) {
@@ -32,7 +32,7 @@ const NavigationAndSearchWrapper = styled.div`
     }
 
     @media (max-width: ${breakpoints.xl}) {
-      min-width: 160px;
+      min-width: 400px; // Further increased min-width
     }
 
     @media (max-width: ${breakpoints.sm}) {
@@ -46,6 +46,8 @@ const NavigationAndSearchWrapper = styled.div`
     justify-content: flex-end;
   }
 `;
+
+
 
 const NavigationMenuWrapper = styled.nav`
   .nav-menu-list {
@@ -124,6 +126,7 @@ const Header = () => {
   const { cartCnt } = useSelector(state => state.cart)
   const { wishlistCnt } = useSelector(state => state.wishlist)
 
+  
   return (
     <HeaderMainWrapper className="header flex items-center">
       <Container className="container">

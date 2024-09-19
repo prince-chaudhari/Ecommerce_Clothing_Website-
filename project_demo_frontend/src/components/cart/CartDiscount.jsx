@@ -76,6 +76,7 @@ const CartDiscount = () => {
   const [appliedCoupons, setAppliedCoupons] = useState([]); // Track applied coupons
   const [duplicateCouponAlertOpen, setDuplicateCouponAlertOpen] = useState(false); // Duplicate coupon alert
   const dispatch = useDispatch();
+  const [error, setError] = useState("")
 
   const calculateDiscount = (coupons) => {
     let totalDiscount = coupons.reduce((acc, coupon) => {
@@ -93,8 +94,9 @@ const CartDiscount = () => {
     const res = await userCoupon({ data, access_token });
     
     if (res.error) {
-      console.log(res);
+      console.log(res.error.data.code[0]);
       setAlertOpen(true);
+      setError(res.error.data.code[0])
     } else {
       const newCoupon = { name: res.data.coupon_name, discount: res.data.discount_percentage };
   
@@ -201,7 +203,7 @@ const CartDiscount = () => {
       <CustomAlert
         open={alertOpen}
         handleClose={handleClose}
-        message="Invalid coupon code."
+        message={error}
         severity="warning"
       />
       <CustomAlert

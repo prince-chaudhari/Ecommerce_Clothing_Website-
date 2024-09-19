@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     # Custom Apps
     'core',
     'account',
+    'search',
 ]
 
 MIDDLEWARE = [

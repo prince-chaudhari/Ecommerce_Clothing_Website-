@@ -20,6 +20,7 @@ import { useGetWishlistProductsQuery } from "../../services/userWishlistApi";
 import { addItemToWishlist } from "../../features/wishlistSlice";
 import { useGetUserAdressQuery } from "../../services/userAddressApi";
 import { addUserAddress } from "../../features/addressSlice";
+import Loader from "../../components/Loader/Loader";
 
 const HomeScreenWrapper = styled.main``;
 
@@ -96,8 +97,7 @@ const HomeScreen = () => {
 
 
   const { data: products, isSuccess: isSuccessProducts, isLoading } = useGetProductsQuery();
-  if (isLoading) return <div>Loading...</div>;
-  if (!isSuccessProducts) return <div>Failed to load products</div>;
+  
 
   let mensCatalog = [];
   if (products && isSuccessProducts) {
@@ -136,7 +136,8 @@ const HomeScreen = () => {
     });
   }
 
-
+  if (isLoading) return <Loader/>;
+  if (!isSuccessProducts) return <div>Failed to load products</div>;
   return (
     <HomeScreenWrapper>
       <Hero />

@@ -15,6 +15,7 @@ import {userWishlistApi} from '../services/userWishlistApi'
 import {userAddressApi} from '../services/userAddressApi'
 import {userReviewApi} from '../services/userReviewApi'
 import {userOrderApi} from '../services/userOrderApi'
+import {productSearchApi} from '../services/productSearchApi'
 
 export const store = configureStore({
   reducer: {
@@ -26,6 +27,7 @@ export const store = configureStore({
     [userAddressApi.reducerPath]: userAddressApi.reducer,
     [userReviewApi.reducerPath]: userReviewApi.reducer,
     [userOrderApi.reducerPath]: userOrderApi.reducer,
+    [productSearchApi.reducerPath]: productSearchApi.reducer,
     auth: authReducer,
     user: userReducer,
     sidebar: sidebarReducer,
@@ -37,5 +39,5 @@ export const store = configureStore({
   },
   middleware: (getDefaultMiddleware) => 
     getDefaultMiddleware()
-      .concat(userAuthApi.middleware, userProductsApi.middleware, userCategoriesApi.middleware, userCartApi.middleware, userWishlistApi.middleware, userAddressApi.middleware, userReviewApi.middleware, userOrderApi.middleware),
+      .concat(userAuthApi.middleware, userProductsApi.middleware, userCategoriesApi.middleware, userCartApi.middleware, userWishlistApi.middleware, userAddressApi.middleware, userReviewApi.middleware, userOrderApi.middleware, productSearchApi.middleware),
 });
