@@ -254,12 +254,19 @@ const ShippingAddress = () => {
   const [userClearProduct] = useClearProductCartMutation();
   const [userOrderProduct] = useAddProductsToOrderMutation();
   const { access_token } = getToken();
-  const { cartItems } = useSelector(state => state.cart)
   const userAddress = addressData.filter(item => item.address.address_id === selectedAddress)
   const [userCoupon] = useApplyCouponMutation();
   const appliedCoupons = useSelector((state) => state.cart.appliedCoupons);
   const [loading, setLoading] = useState(false); // New state for loading
+  const { cartItems, totalQuantity, totalPrice, discount } = useSelector(state => state.cart)
 
+  // Function to calculate the savings
+  const calculateSavings = () => {
+    return (totalPrice / (1 - discount / 100)) - totalPrice;
+  };
+
+  const savings = calculateSavings();
+  
   const dispatch = useDispatch();
 
   const handleClose = () => {
@@ -294,6 +301,8 @@ const ShippingAddress = () => {
         })),
         payment_method: 'paypal',
         address: userAddress[0].address,
+        total_price: totalPrice,
+        savings: savings,
       };
 
       console.log("actualData", actualData);

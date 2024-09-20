@@ -10,6 +10,10 @@ from .forms import ProductReviewForm
 from django.db.models import Count
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.exceptions import NotFound
+from .invoice_template import generate_invoice
+from django.core.mail import EmailMessage
+from django.conf import settings
+import os
 
 class IndexView(APIView):
     permission_classes = []
@@ -90,7 +94,7 @@ class VendorDetailView(APIView):
 
         products = Product.objects.filter(product_status = 'published', vendor = vendor)
         productsSerializer = ProductSerializer(data = products, many=True)
-
+    
         combined_data = {
             'vendor': vendorSerializer.data,
             'products': productsSerializer.data
@@ -505,11 +509,38 @@ class ProductReviewDetailView(APIView):
         review.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
+def send_invoice_email(request, user_email, order_details):
+    # Generate invoice PDF
+    invoice_data = {
+        'customer_name': order_details['customer_name'],
+        'customer_email': user_email,
+        'invoice_number': order_details['invoice_number'],
+        'invoice_date': order_details['invoice_date'],
+        'items': order_details['items'],
+        'total_amount': order_details['total_amount'],
+        'savings': order_details['savings']
+    }
+    pdf_file_path = os.path.join(settings.MEDIA_ROOT, f"invoice_{invoice_data['invoice_number']}.pdf")
+    generate_invoice(invoice_data, pdf_file_path)
 
+    # Create email
+    subject = 'Your Purchase Invoice'
+    body = f"Dear {invoice_data['customer_name']},\n\nThank you for your purchase. Please find attached your invoice."
+    email = EmailMessage(subject, body, settings.EMAIL_HOST_USER, [user_email])
+
+    # Attach PDF
+    email.attach_file(pdf_file_path)
+    
+    # Send email
+    email.send()
+
+    # Optional: Remove PDF file after sending email
+    if os.path.exists(pdf_file_path):
+        os.remove(pdf_file_path)
     
 class CreateOrderView(APIView):
     """
-    API view for creating an order with multiple products
+    API view for creating an order with multiple products.
     """
 
     def post(self, request, *args, **kwargs):
@@ -517,13 +548,15 @@ class CreateOrderView(APIView):
         products = request.data.get('product')  # Expecting a list of products with quantities
         payment_method = request.data.get('payment_method')
         address_data = request.data.get('address')  # Address data as a dictionary
+        total_price = request.data.get('total_price')  # Address data as a dictionary
+        savings = request.data.get('savings')  # Address data as a dictionary
 
         # Validate required fields
         if not products or not payment_method or not address_data:
             return Response({"error": "Missing required fields"}, status=status.HTTP_400_BAD_REQUEST)
 
         # Initialize the total price for the order
-        total_price = 0
+        # total_price = 0
         order_items = []
 
         # Loop through the products and add each to the order
@@ -538,7 +571,6 @@ class CreateOrderView(APIView):
             # Calculate total price for the current product
             price_at_purchase = product.price
             item_total = price_at_purchase * int(quantity)
-            total_price += item_total
 
             # Add product details to order items list
             order_items.append({
@@ -587,6 +619,27 @@ class CreateOrderView(APIView):
                 price_at_purchase=item['price_at_purchase'],
                 item_total=item['item_total']
             )
+
+        # Send invoice email to the user
+        try:
+            order_details = {
+                'customer_name': f"{user.username}",
+                'invoice_number': order.order_id,  # Assuming order ID as invoice number
+                'invoice_date': order.order_date.strftime("%Y-%m-%d"),
+                'items': [
+                    {
+                        'product': item['product'].title,
+                        'quantity': item['quantity'],
+                        'price': item['price_at_purchase'],
+                        'total': item['item_total']
+                    } for item in order_items
+                ],
+                'total_amount': total_price,
+                'savings': savings
+            }
+            send_invoice_email(request, user.email, order_details)
+        except Exception as e:
+            return Response({"error": f"Failed to send invoice email: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
         # Serialize the created order
         serializer = OrderSerializer(order)
@@ -653,3 +706,4 @@ class CheckCouponAPIView(APIView):
         
         # Return error response if coupon is not valid
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    

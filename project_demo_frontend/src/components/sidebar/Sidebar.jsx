@@ -11,6 +11,7 @@ import {
   toggleSidebar,
 } from "../../features/sidebarSlice";
 import { BiX, BiSearch } from 'react-icons/bi'; // Import BiX for the close button
+import { getToken } from "../../services/LocalStorageService";
 
 const SideNavigationWrapper = styled.div`
   position: fixed;
@@ -86,6 +87,7 @@ const Sidebar = () => {
   const location = useLocation();
   const isSidebarOpen = useSelector(selectIsSidebarOpen);
   const dispatch = useDispatch();
+  const { access_token } = getToken()
 
   return (
     <SideNavigationWrapper
@@ -102,7 +104,7 @@ const Sidebar = () => {
           <div className="brand-img-wrap flex items-center justify-center">
             <img className="site-brand-img" src={staticImages.logo} />
           </div>
-          <span className="site-brand-text text-outerspace">achats.</span>
+          <span className="site-brand-text text-outerspace">GreenCart</span>
         </SiteBrandWrapper>
         <form className="sidenav-search-form">
           <InputGroupWrapper className="input-group">
@@ -116,6 +118,7 @@ const Sidebar = () => {
             />
           </InputGroupWrapper>
         </form>
+        {access_token ?
         <ul className="sidenav-menu-list grid">
           {sideMenuData?.map((menu) => (
             <li key={menu.id}>
@@ -132,6 +135,36 @@ const Sidebar = () => {
             </li>
           ))}
         </ul>
+        :
+        <ul className="sidenav-menu-list grid">
+          <li >
+            <Link
+              to={"/"}
+              className={`flex items-center text-gray ${location.pathname === '/' ? "active" : ""
+                }`}
+            >
+              <span className="text-xxl">
+                <i className={`bi bi-house`}></i>
+              </span>
+              <span className="text-lg font-medium">Home</span>
+            </Link>
+          </li>
+          <li >
+            <Link
+              to="/product"
+              className={`flex items-center text-gray ${location.pathname === "/product" ? "active" : ""
+                }`}
+            >
+              <span className="text-xxl">
+                <i className={`bi bi-grid-fill`}></i>
+              </span>
+              <span className="text-lg font-medium">Products</span>
+            </Link>
+          </li>
+        </ul>}
+
+
+
       </div>
     </SideNavigationWrapper>
   );

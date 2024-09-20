@@ -9,6 +9,18 @@ import { breakpoints, defaultTheme } from "../../styles/themes/default";
 import { useDispatch, useSelector } from "react-redux";
 import { toggleSidebar } from "../../features/sidebarSlice";
 import { BiSearch, BiMenu } from 'react-icons/bi'; // Import BiMenu
+import { getToken } from "../../services/LocalStorageService";
+import { BaseLinkGreen, BaseLinkOutlineDark } from "../../styles/button";
+
+const ButtonGroupWrapper = styled.div`
+  gap: 8px;
+  @media (max-width: ${breakpoints.sm}) {
+    button,
+    a {
+      min-width: 100px;
+    }
+  }
+`;
 
 const NavigationAndSearchWrapper = styled.div`
   column-gap: 20px;
@@ -125,8 +137,9 @@ const Header = () => {
 
   const { cartCnt } = useSelector(state => state.cart)
   const { wishlistCnt } = useSelector(state => state.wishlist)
+  const { access_token } = getToken()
 
-  
+
   return (
     <HeaderMainWrapper className="header flex items-center">
       <Container className="container">
@@ -147,7 +160,7 @@ const Header = () => {
                   alt="site logo"
                 />
               </div>
-              <span className="site-brand-text text-outerspace">achats.</span>
+              <span className="site-brand-text text-outerspace">GreenCart</span>
             </SiteBrandWrapper>
           </div>
           <NavigationAndSearchWrapper className="flex items-center">
@@ -181,38 +194,46 @@ const Header = () => {
             </form>
           </NavigationAndSearchWrapper>
 
-          <IconLinksWrapper className="flex items-center">
-            <Link
-              to="/wishlist"
-              className={`icon-link ${location.pathname === "/wishlist" ? "active" : ""
-                } inline-flex items-center justify-center`}
-            >
-              {wishlistCnt > 0 &&
-                <span>{wishlistCnt}</span>
-              }
-              <img src={staticImages.heart} alt="Wishlist" />
-            </Link>
-            <Link
-              to="/account"
-              className={`icon-link ${location.pathname === "/account" ||
-                location.pathname === "/account/add"
-                ? "active"
-                : ""
-                } inline-flex items-center justify-center`}
-            >
-              <img src={staticImages.user} alt="" />
-            </Link>
-            <Link
-              to="/cart"
-              className={`icon-link ${location.pathname === "/cart" ? "active" : ""}`}
-            >
-              {cartCnt > 0 &&
-                <span>{cartCnt}</span>
-              }
-              <img src={staticImages.cart} alt="Cart" />
-            </Link>
+          {
+            access_token ?
+              <IconLinksWrapper className="flex items-center">
+                <Link
+                  to="/wishlist"
+                  className={`icon-link ${location.pathname === "/wishlist" ? "active" : ""
+                    } inline-flex items-center justify-center`}
+                >
+                  {wishlistCnt > 0 &&
+                    <span>{wishlistCnt}</span>
+                  }
+                  <img src={staticImages.heart} alt="Wishlist" />
+                </Link>
+                <Link
+                  to="/account"
+                  className={`icon-link ${location.pathname === "/account" ||
+                    location.pathname === "/account/add"
+                    ? "active"
+                    : ""
+                    } inline-flex items-center justify-center`}
+                >
+                  <img src={staticImages.user} alt="" />
+                </Link>
+                <Link
+                  to="/cart"
+                  className={`icon-link ${location.pathname === "/cart" ? "active" : ""}`}
+                >
+                  {cartCnt > 0 &&
+                    <span>{cartCnt}</span>
+                  }
+                  <img src={staticImages.cart} alt="Cart" />
+                </Link>
 
-          </IconLinksWrapper>
+              </IconLinksWrapper>
+              :
+              <ButtonGroupWrapper className="flex items-center">
+                <BaseLinkGreen to="/sign_in">Login</BaseLinkGreen>
+                <BaseLinkOutlineDark to="/sign_up">Sign up</BaseLinkOutlineDark>
+              </ButtonGroupWrapper>
+          }
         </div>
       </Container>
     </HeaderMainWrapper>

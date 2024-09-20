@@ -162,7 +162,7 @@ const ProductListScreen = () => {
           <DescriptionContent>
             <Title titleText={"Clothing for Everyone Online"} />
             <ContentStylings className="text-base content-stylings">
-              <h4>Reexplore Clothing Collection Online at Achats.</h4>
+              <h4>Reexplore Clothing Collection Online at GreenCart</h4>
               <p>
                 Lorem ipsum dolor sit amet consectetur, adipisicing elit. Sed,
                 molestiae ex atque similique consequuntur ipsum sapiente
@@ -176,7 +176,7 @@ const ProductListScreen = () => {
               </p>
               <h4>
                 One-stop Destination to Shop Every Clothing for Everyone:
-                Achats.
+                GreenCart
               </h4>
               <p>
                 Lorem ipsum dolor sit amet consectetur adipisicing elit. Nemo

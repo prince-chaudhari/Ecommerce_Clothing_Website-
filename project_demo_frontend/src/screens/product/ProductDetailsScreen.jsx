@@ -238,6 +238,7 @@ const ProductDetailsScreen = () => {
   const [size, setSize] = useState("");
   const [selectedSize, setSelectedSize] = useState(""); // Add selectedSize state to track the user's selected size
   const [successAlertOpen, setSuccessAlertOpen] = useState(false);
+  const [loginAlertOpen, setLoginAlertOpen] = useState(false);
   const [alertOpen, setAlertOpen] = useState(false);
   const navigate = useNavigate(); // Initialize navigate
 
@@ -252,6 +253,7 @@ const ProductDetailsScreen = () => {
   const handleClose = () => {
     setAlertOpen(false);
     setSuccessAlertOpen(false);
+    setLoginAlertOpen(false);
   };
 
   const { access_token } = getToken();
@@ -261,6 +263,10 @@ const ProductDetailsScreen = () => {
 
 
   const handleAddToCart = async () => {
+    if(!access_token){
+      setLoginAlertOpen(true)
+      return
+    }
     if (size === "") {
       showAlert();
       return;
@@ -471,6 +477,12 @@ const ProductDetailsScreen = () => {
         handleClose={handleClose}
         message="Item added to cart successfully!"
         severity="success"
+      />
+      <CustomAlert
+        open={loginAlertOpen}
+        handleClose={handleClose}
+        message="Please login to continue!"
+        severity="warning"
       />
     </DetailsScreenWrapper>
   );
