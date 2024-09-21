@@ -40,7 +40,6 @@ const breadcrumbItems = [
 const OrderListScreen = () => {
   const { access_token } = getToken();
   const { data: orderData, isSuccess: isSuccessOrder } = useGetOrderProductsQuery({ access_token });
-  console.log(orderData);
   
   return (
     <OrderListScreenWrapper className="page-py-spacing">
@@ -79,12 +78,11 @@ const OrderListScreen = () => {
                 <div className="order-tabs-content" id="active">
                   <OrderItemList orders={orderData} />
                 </div>
+                {orderData && orderData.length == 0 && 
                 <div className="order-tabs-content" id="cancelled">
-                  Cancelled content
+                  No order data available
                 </div>
-                <div className="order-tabs-content" id="completed">
-                  Completed content
-                </div>
+                }
               </div>
             </div>
           </UserContent>

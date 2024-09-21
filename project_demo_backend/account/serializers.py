@@ -52,7 +52,7 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         # Generate and save coupon code
         coupon_code = generate_coupon_code()  # Ensure this function generates a unique code
         coupon = Coupon.objects.create(
-           name = "WELCOME_DISCOUNT",
+           name = f"WELCOME_DISCOUNT_{user.email}",
             code=coupon_code,
             user=user,
             discount_percentage=25.0,  # Set your desired discount percentage
@@ -106,7 +106,7 @@ class UserLoginSerializer(serializers.ModelSerializer):
 class UserProfileSerializer(serializers.ModelSerializer):
   class Meta:
     model = User
-    fields = ['id', 'email', 'username', 'get_avatar', 'gender', 'date_of_birth']
+    fields = ['id', 'email', 'username', 'gender', 'date_of_birth']
 
 class UserChangePasswordSerializer(serializers.Serializer):
     current_password = serializers.CharField(max_length=255, style={'input_type': 'password'}, write_only=True)

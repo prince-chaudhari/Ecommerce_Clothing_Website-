@@ -42,10 +42,16 @@ class ProductSerializer(serializers.ModelSerializer):
         model = Product
         fields = ['pid', 'category', 'title', 'product_image', 'price', 'old_price', 'get_percentage', 'description', 'colors', 'color', 'sizes']
 
+class SearchProductSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Product
+        fields = ['pid', 'title', 'product_image',]
+
 class ProductImagesSerializer(serializers.ModelSerializer):
     class Meta:
         model = ProductImages
-        fields = ['product_images']  # Add other fields if needed
+        fields = ['id', 'product_images']  # Add other fields if needed
 
 class CartProductSerializer(serializers.ModelSerializer):
     category = CategorySerializer(read_only=True)

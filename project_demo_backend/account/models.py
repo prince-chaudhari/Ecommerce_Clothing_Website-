@@ -33,7 +33,6 @@ class User(AbstractBaseUser, PermissionsMixin):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     email = models.EmailField(unique=True)
     username = models.CharField(max_length=255, blank=True, default='')
-    avatar = models.ImageField(upload_to='avatars', blank=True, null=True)
 
     # Gender field is now required
     GENDER_CHOICES = [
@@ -61,11 +60,6 @@ class User(AbstractBaseUser, PermissionsMixin):
     def __str__(self):
         return self.username
     
-    def get_avatar(self):
-        if self.avatar:
-            return settings.WEBSITE_URL + self.avatar.url
-        else:
-            return 'https://picsum.photos/200/200'
 
 
 

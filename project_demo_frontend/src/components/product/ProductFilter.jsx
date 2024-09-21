@@ -238,16 +238,6 @@ const ProductFilter = React.memo(() => {
         </FilterTitle>
 
         <FilterWrap className={`range filter-wrap ${!isPriceFilterOpen ? "hide" : "show"}`}>
-          <div className="range-slider">
-            <RangeSlider
-              step={1}
-              value={value}
-              onInput={handleSliderChange}
-              className="range-slider"
-              min={minPrice}
-              max={maxPrice}
-            />
-          </div>
 
           <div className="range-price w-full flex items-center">
             <input

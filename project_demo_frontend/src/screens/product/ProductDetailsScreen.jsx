@@ -232,15 +232,22 @@ const ProductSimilarStyled = styled(ProductSimilar)`
 
 const ProductDetailsScreen = () => {
   const { pid } = useParams();
-  const { data, isSuccess, isLoading, isError } = useGetProductQuery({ pid });
+  const { data, isSuccess, isLoading, isError, refetch } = useGetProductQuery({ pid });
   const [isInCart, setIsInCart] = useState(false);
-  const cartItems = useSelector((state) => state.cart.cartItems);
   const [size, setSize] = useState("");
   const [selectedSize, setSelectedSize] = useState(""); // Add selectedSize state to track the user's selected size
   const [successAlertOpen, setSuccessAlertOpen] = useState(false);
   const [loginAlertOpen, setLoginAlertOpen] = useState(false);
   const [alertOpen, setAlertOpen] = useState(false);
   const navigate = useNavigate(); // Initialize navigate
+
+  useEffect(() => {
+    // Reset size and isInCart when the pid changes
+    setSize("");
+    setIsInCart(false);
+    setSelectedSize(""); // Reset the selectedSize when the product changes
+  }, [pid]); // The effect will run whenever the pid changes
+  
 
   const handleGoToCart = () => {
     navigate('/cart'); // Redirect to /cart
@@ -322,8 +329,8 @@ const ProductDetailsScreen = () => {
   ));
 
   const breadcrumbItems = [
-    { label: "Shop", link: "" },
-    { label: data.product.title.split(' ')[0], link: "" },
+    { label: "Shop", link: "/product" },
+    { label: data.product.title.split(' ')[0], link: "/product" },
     { label: data.product.category.title.split('-')[1], link: "" },
   ];
 
@@ -333,7 +340,7 @@ const ProductDetailsScreen = () => {
         <BreadcrumbStyled items={breadcrumbItems} />
         <DetailsContent className="grid">
           <ProductPreview
-            key={data.product.product_image}
+            // key={data.product.product_image}
             mainImage={data.product.product_image}
             previewImages={data.p_image}
           />

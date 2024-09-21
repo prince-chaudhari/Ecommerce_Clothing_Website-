@@ -20,7 +20,6 @@ class IndexView(APIView):
     def get(self, request, format=None):
         products = Product.objects.filter(product_status = 'published', featured = True)
         serializer = ProductSerializer(products, many=True)
-        print("/"*20, serializer.data)
         return Response(serializer.data, status=status.HTTP_200_OK)
     
 class ProductListView(APIView):
@@ -53,7 +52,6 @@ class CategoryListView(APIView):
         men_cnt = 0
         women_cnt = 0
         for i in categories:
-            print(i.title)
             if i.title.startswith("Men"):
                 men_cnt += 1
             elif i.title.startswith("Women"):
@@ -244,7 +242,6 @@ class AddToCartView(generics.CreateAPIView):
         size = data.get('size')
         quantity = data.get('quantity', 1)
 
-        print("data",data)
 
         user = request.user
 
@@ -326,7 +323,6 @@ class CartRetrieveUpdateDestroyAPIView(APIView):
         return Response({"error": "Quantity not provided"}, status=status.HTTP_400_BAD_REQUEST)
 
     def delete(self, request, *args, **kwargs):
-        print(request.data)
         cart_id = request.data.get('cart_id')
 
         if not cart_id:
@@ -678,7 +674,6 @@ class ApplyCouponAPIView(APIView):
         serializer = ApplyCouponSerializer(data=request.data, context={'request': request})
         if serializer.is_valid():
             coupon = serializer.validated_data['name']
-            print("coupon", coupon)
             # Store the coupon ID in the session (optional)
             request.session['coupon_id'] = coupon.id
 

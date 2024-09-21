@@ -97,23 +97,6 @@ const DescriptionContent = styled.div`
 const ProductListScreen = () => {
   const filters = useSelector((state) => state.productFilter);
   const [filterProducts, { data: products, isSuccess: isSuccessProducts, isLoading, error }] = useFilterProductsMutation();
-  // const { access_token } = getToken();
-  // const dispatch = useDispatch();
-  // const { data: cartData, isSuccess: isSuccessCart } = useGetCartProductsQuery({ access_token });
-
-  // useEffect(() => {
-  //   if (cartData && isSuccessCart) {
-  //     // Assuming `cartData` is an array of cart items
-  //     cartData.forEach((item) => {
-  //       dispatch(addItemToCart({
-  //         product: item.product,    // Assuming item contains a `product` field
-  //         quantity: item.quantity,   // Assuming item contains a `quantity` field
-  //         cart_id: item.cart_id,
-  //         size: item.size
-  //       }));
-  //     });
-  //   }
-  // }, [cartData, isSuccessCart]);
 
   useEffect(() => {
     // Trigger the mutation to fetch products based on the current filters
@@ -139,7 +122,7 @@ const ProductListScreen = () => {
           </ProductsContentLeft>
           <ProductsContentRight>
             <div className="products-right-top flex items-center justify-between">
-              <h4 className="text-xxl">Women&apos;s Clothing</h4>
+              <h4 className="text-xxl">Men & Women&apos;s Clothing</h4>
               <ul className="products-right-nav flex items-center justify-end flex-wrap">
                 <li>
                   <Link to="/" className="active text-lg font-semibold">
