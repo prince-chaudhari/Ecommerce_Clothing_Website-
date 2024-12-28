@@ -3,7 +3,7 @@ import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react'
 // Define a service using a base URL and expected endpoints
 export const userOrderApi = createApi({
     reducerPath: 'userOrderApi',
-    baseQuery: fetchBaseQuery({ baseUrl: 'http://127.0.0.1:8000/api/orders/' }),
+    baseQuery: fetchBaseQuery({ baseUrl: 'https://ecommerce-clothing-website-v4ip.onrender.com/api/orders/' }),
     endpoints: (builder) => ({
         addProductsToOrder: builder.mutation({
             query: ({ actualData, access_token }) => {

@@ -25,9 +25,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-k#j(op=79rb%sp=o^^5s2#5m#une2u*-709@tpb2x_hxjf5*du'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['ecommerce-clothing-website-v4ip.onrender.com', 'localhost', '10.0.2.2', '127.0.0.1']
 
 
 # Application definition
@@ -171,7 +171,7 @@ JAZZMIN_SETTINGS = {
     'copyright' : 'greencart.com',
 }
 
-WEBSITE_URL = 'http://127.0.0.1:8000'
+WEBSITE_URL = 'https://ecommerce-clothing-website-v4ip.onrender.com'
 
 
 # Email configuration for Gmail SMTP with App Password
@@ -212,8 +212,12 @@ SIMPLE_JWT = {
 PASSWORD_RESET_TIMEOUT=900 # 900sec = 15min
 
 CORS_ALLOWED_ORIGINS = [
+    "https://tangerine-fudge-5724fa.netlify.app",
     "http://localhost:3000",
     "http://127.0.0.1:3000",
 ]
 
+CSRF_TRUSTED_ORIGINS = [
+    'https://tangerine-fudge-5724fa.netlify.app',
+]
 # django.utils.timezone
